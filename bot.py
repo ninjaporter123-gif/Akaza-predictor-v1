@@ -1,22 +1,11 @@
+import os
+import sys
 import threading
 import time
 from collections import Counter
 from decimal import Decimal, getcontext
 from flask import Flask
 import requests
-
-# Web server for Render Free Tier Keep-Alive
-app = Flask(__name__)
-
-
-@app.route("/")
-def home():
-    return "Bot is running 24/7!"
-
-
-def run_web():
-    app.run(host="0.0.0.0", port=10000)
-
 
 getcontext().prec = 35
 
@@ -26,11 +15,20 @@ CHAT_ID = "-1004446531098"
 
 HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
+        " like Gecko) Chrome/122.0.0.0 Safari/537.36"
     ),
     "Content-Type": "application/json;charset=UTF-8",
     "Accept": "application/json, text/plain, */*",
 }
+
+app = Flask(__name__)
+
+
+@app.route("/")
+def home():
+    return "Bot is alive!"
+
 
 last_processed_issue = None
 previous_prediction = None
@@ -41,9 +39,12 @@ def send_telegram(text):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "Markdown"}
     try:
-        requests.post(url, json=payload, timeout=10)
+        res = requests.post(url, json=payload, timeout=10)
+        print(f"[TELEGRAM LOG] Sent response code: {res.status_code}", flush=True)
+        if res.status_code != 200:
+            print(f"[TELEGRAM ERROR] {res.text}", flush=True)
     except Exception as e:
-        print("Telegram Connection Error:", e)
+        print(f"[TELEGRAM FAIL] {e}", flush=True)
 
 
 def calculate_prediction(next_issue, last_6_numbers):
@@ -68,19 +69,24 @@ def calculate_prediction(next_issue, last_6_numbers):
         pred = "SMALL" if most_common_digit <= 4 else "BIG"
         return pred, most_common_digit, occurrence_count, decimal_str
     except Exception as e:
-        print("Calculation Error:", e)
+        print(f"Calc Error: {e}", flush=True)
         return "BIG", 5, 1, "000000000000000"
 
 
-def bot_loop():
+def bot_worker():
     global last_processed_issue, previous_prediction, target_issue
+    print(">>> BOT WORKER THREAD STARTED <<<", flush=True)
+
+    # Initial test signal on boot
+    send_telegram("🚀 *Bot connected successfully to 24/7 Server! Monitoring WinGo...*")
+
     while True:
         try:
             response = requests.get(
                 API_URL,
                 params={"pageNo": 1, "pageSize": 10},
                 headers=HEADERS,
-                timeout=10,
+                timeout=8,
             )
             res_data = response.json()
 
@@ -97,6 +103,7 @@ def bot_loop():
                 actual_size = "BIG" if result_num >= 5 else "SMALL"
 
                 if current_issue != last_processed_issue:
+                    print(f"[ROUND UPDATE] New Issue: {current_issue}", flush=True)
                     if target_issue and current_issue == target_issue:
                         status_header = (
                             "🎉 ✅ WIN"
@@ -137,14 +144,17 @@ def bot_loop():
                     send_telegram(signal_msg)
 
         except Exception as e:
-            print("Fetch Error:", e)
+            print(f"[API LOOP ERROR] {e}", flush=True)
 
-        time.sleep(5)
+        time.sleep(4)
 
+
+# Background worker start
+worker_thread = threading.Thread(target=bot_worker)
+worker_thread.daemon = True
+worker_thread.start()
 
 if __name__ == "__main__":
-    t = threading.Thread(target=bot_loop)
-    t.daemon = True
-    t.start()
-    run_web()
-                      
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+    
