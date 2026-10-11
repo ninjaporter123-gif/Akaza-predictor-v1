@@ -8,13 +8,13 @@ import requests
 
 getcontext().prec = 50
 
-# ----------------- HEALTH CHECK SERVER -----------------
+# ----------------- BACK4APP HEALTH CHECK WEB SERVER -----------------
 class HealthHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write(b"Bot is Running 24/7!")
+        self.wfile.write(b"CTG Gaming Prediction Bot Running 24/7!")
 
     def log_message(self, format, *args):
         pass
@@ -27,10 +27,10 @@ def run_web_server():
         print("[HTTP ERROR]", e)
 
 threading.Thread(target=run_web_server, daemon=True).start()
-# --------------------------------------------------------
+# --------------------------------------------------------------------
 
 API_URL = "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json"
-BOT_TOKEN = "8662159068:AAFhMvrJUVC1Sj4EG8rVDkuJhAXvtT5PYq8"
+BOT_TOKEN = "8662159068:AAGzjW3kf6ZPGft8SgfOje6s0APG4RL3WzU"
 CHAT_ID = "-1004446531098"
 
 HEADERS = {
@@ -109,7 +109,6 @@ def calculate_prediction(history_list):
         lucky_nums = [n1, n2]
         return pred, chosen_digit, chosen_count, decimal_str, lucky_nums, reason
     except Exception as e:
-        print("[CALC ERROR]", e)
         return "BIG", 7, 2, "27380000000000000078", [7, 8], "Algorithm Auto"
 
 def fetch_history_data():
@@ -126,7 +125,7 @@ def fetch_history_data():
 
 def broadcast_prediction(target_iss, history_list):
     global previous_prediction, previous_lucky_nums, last_sent_prediction_issue
-    
+
     if last_sent_prediction_issue == target_iss:
         return
     last_sent_prediction_issue = target_iss
@@ -173,12 +172,11 @@ def start_bot_session(target):
     bot_state["current_level"] = 1
     bot_state["max_level"] = 1
     bot_state["scheduled_time"] = None
-    
+
     mode = f"{target} WINS TARGET" if target > 0 else "UNLIMITED 24/7"
     send_telegram(f"🚀 *CTG BOT STARTED!*\n🎯 Mode: *{mode}*")
     time.sleep(1)
 
-    # Trigger first signal right away
     data_list = fetch_history_data()
     if data_list and len(data_list) >= 6:
         latest = data_list[0]
@@ -230,7 +228,7 @@ def telegram_listener():
             url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
             params = {"offset": last_update_id + 1, "timeout": 10}
             resp = requests.get(url, params=params, timeout=15).json()
-            
+
             for update in resp.get("result", []):
                 last_update_id = update["update_id"]
                 msg_obj = update.get("message", {})
@@ -241,14 +239,14 @@ def telegram_listener():
 
                 parts = msg.split()
                 cmd = parts[0].lower()
-                
+
                 if cmd in ["/start", "start"]:
                     target = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
                     if not bot_state["is_active"]:
                         send_telegram(f"✅ Bot started with {target if target>0 else '24/7'} wins target!", chat_id)
                         start_bot_session(target)
                     else:
-                        send_telegram("⚠️ Session already running!", chat_id)
+                        send_telegram("⚠️ Session already in progress!", chat_id)
 
                 elif cmd in ["/schedule", "schedule"]:
                     if len(parts) >= 2:
@@ -270,7 +268,7 @@ def telegram_listener():
 
 threading.Thread(target=telegram_listener, daemon=True).start()
 
-# Main Prediction Loop
+# Main Prediction Check Loop
 while True:
     try:
         if not bot_state["is_active"] and bot_state["scheduled_time"]:
@@ -346,4 +344,4 @@ while True:
         print("[LOOP ERROR]", e)
 
     time.sleep(4)
-    
+                            
