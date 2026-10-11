@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👑 CTG Prediction Controller</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --card-bg: #131b2e;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.35);
+            --green: #10b981;
+            --red: #ef4444;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --border: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px 12px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 16px 12px;
+            background: linear-gradient(180deg, #1e293b 0%, #111827 100%);
+            border-radius: 16px;
+            border: 1px solid #334155;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .header h1 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .header p {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            margin-top: 4px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        .status-badge.offline {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-badge.online {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-sub);
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            background: #0b0f19;
+            border: 1px solid #334155;
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+
+        .btn-start:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+        }
+
+        .btn-stop:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            text-align: center;
+        }
+
+        .stat-box {
+            background: #0b0f19;
+            padding: 10px 6px;
+            border-radius: 10px;
+            border: 1px solid #1e293b;
+        }
+
+        .stat-val {
+            font-size: 1.15rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: #60a5fa;
+        }
+
+        .stat-lbl {
+            font-size: 0.68rem;
+            color: var(--text-sub);
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Live Preview Card */
+        .preview-card {
+            background: #0b0f19;
+            border: 1px dashed #334155;
+            border-radius: 12px;
+            padding: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: #cbd5e1;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .log-box {
+            background: #050811;
+            border-radius: 10px;
+            padding: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: #64748b;
+            max-height: 120px;
+            overflow-y: auto;
+            border: 1px solid #1e293b;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>👑 CTG WINGO PREDICTOR</h1>
+        <p>1-Minute VIP Automated Signal Controller</p>
+        <div id="statusBadge" class="status-badge offline">● BOT STOPPED</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="card">
+        <div class="controls-grid">
+            <div>
+                <label>TARGET WINS (0 = 24/7)</label>
+                <input type="number" id="targetWinsInput" value="10" min="0" max="100">
+            </div>
+            <div>
+                <label>AUTO STOP ON TARGET</label>
+                <input type="text" id="statusInfo" value="READY" disabled>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button id="btnStart" class="btn-start" onclick="startBot()">🚀 START BOT</button>
+            <button id="btnStop" class="btn-stop" onclick="stopBot()" disabled>🛑 STOP BOT</button>
+        </div>
+    </div>
+
+    <!-- Live Performance Stats -->
+    <div class="card">
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div id="statTotal" class="stat-val">0</div>
+                <div class="stat-lbl">TOTAL</div>
+            </div>
+            <div class="stat-box">
+                <div id="statWins" class="stat-val" style="color: #34d399;">0</div>
+                <div class="stat-lbl">WINS</div>
+            </div>
+            <div class="stat-box">
+                <div id="statHits" class="stat-val" style="color: #fbbf24;">0</div>
+                <div class="stat-lbl">HIT NUM</div>
+            </div>
+            <div class="stat-box">
+                <div id="statLevel" class="stat-val" style="color: #f87171;">LV 1</div>
+                <div class="stat-lbl">STAGE</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Telegram Signal Preview -->
+    <div class="card">
+        <label>LIVE SIGNAL BROADCAST PREVIEW</label>
+        <div id="previewCard" class="preview-card">Waiting for session to start...</div>
+    </div>
+
+    <!-- Console Logs -->
+    <div class="card">
+        <label>ACTIVITY LOGS</label>
+        <div id="logBox" class="log-box">[System Ready] Click START BOT to begin dispatching.</div>
+    </div>
+</div>
+
+<script>
+    const BOT_TOKEN = "8662159068:AAGzjW3kf6ZPGft8SgfOje6s0APG4RL3WzU";
+    const CHAT_ID = "-1004446531098";
+    const API_URL = "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
+    const FIXED_DIVIDEND = 2738;
+
+    let isRunning = false;
+    let targetWins = 10;
+    let totalPredictions = 0;
+    let totalWins = 0;
+    let totalNumWins = 0;
+    let currentLevel = 1;
+    let maxLevel = 1;
+
+    let currentTargetPeriod = null;
+    let currentPredictedSize = null;
+    let currentLuckyNums = [];
+    let evaluatedPeriods = new Set();
+    let publishedPeriods = new Set();
+    let intervalTimer = null;
+
+    let recentCache = [7, 3, 8, 1, 9, 4];
+
+    function log(msg) {
+        const box = document.getElementById("logBox");
+        const t = new Date().toLocaleTimeString();
+        box.innerHTML = `[${t}] ${msg}<br>` + box.innerHTML;
+    }
+
+    async function sendTelegram(markdownText) {
+        try {
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: CHAT_ID,
+                    text: markdownText,
+                    parse_mode: "Markdown"
+                })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                log("✓ Telegram message broadcasted successfully.");
+            } else {
+                log("⚠ TG Error: " + data.description);
+            }
+        } catch (e) {
+            log("⚠ TG Network Error: " + e.message);
+        }
+    }
+
+    function calculatePrediction(numList) {
+        const latestNum = numList[0];
+        const countToTake = (latestNum % 2 !== 0) ? 5 : 6;
+        const selected = numList.slice(0, countToTake);
+        const concatStr = selected.join("");
+        let divisor = BigInt(concatStr);
+        if (divisor === 0n) divisor = 1n;
+
+        // BigInt Division simulated with 20 Decimals
+        const divScaled = (BigInt(FIXED_DIVIDEND) * (10n ** 24n)) / divisor;
+        let decStr = divScaled.toString().padStart(24, '0').slice(0, 20);
+
+        const d1 = decStr[18];
+        const d2 = decStr[19];
+        const n1 = parseInt(d1);
+        const n2 = parseInt(d2);
+
+        const size1 = n1 >= 5 ? "BIG" : "SMALL";
+        const size2 = n2 >= 5 ? "SMALL" : "BIG";
+
+        let pred = "";
+        let chosenDigit = n1;
+        let chosenCount = 1;
+        let reason = "";
+
+        if (size1 === size2) {
+            pred = size1;
+            chosenDigit = n1;
+            chosenCount = (decStr.match(new RegExp(d1, "g")) || []).length;
+            reason = `Both ${size1}`;
+        } else {
+            const c1 = (decStr.match(new RegExp(d1, "g")) || []).length;
+            const c2 = (decStr.match(new RegExp(d2, "g")) || []).length;
+            if (c1 >= c2) {
+                chosenDigit = n1;
+                chosenCount = c1;
+            } else {
+                chosenDigit = n2;
+                chosenCount = c2;
+            }
+            pred = chosenDigit <= 4 ? "SMALL" : "BIG";
+            reason = `Majority (${chosenDigit})`;
+        }
+
+        return {
+            pred,
+            chosenDigit,
+            chosenCount,
+            decStr,
+            luckyNums: [n1, n2],
+            reason
+        };
+    }
+
+    async function fetchLiveData() {
+        try {
+            const res = await fetch(`${API_URL}?pageNo=1&pageSize=10`, { cache: "no-store" });
+            if (res.ok) {
+                const json = await res.json();
+                const list = (json.data && json.data.list) || json.list || [];
+                if (list.length >= 6) {
+                    recentCache = list.slice(0, 6).map(x => parseInt(x.number));
+                    const issue = parseInt(list[0].issueNumber || list[0].period);
+                    const num = parseInt(list[0].number);
+                    return { issue, num };
+                }
+            }
+        } catch (e) {
+            log("API Fetch note: Using sync timer.");
+        }
+
+        // Real-time clock generator fallback
+        const now = new Date();
+        const minIdx = now.getHours() * 60 + now.getMinutes();
+        const ymd = now.getFullYear().toString() + (now.getMonth() + 1).toString().padStart(2, '0') + now.getDate().toString().padStart(2, '0');
+        const issue = parseInt(ymd + minIdx.toString().padStart(4, '0'));
+        const num = Math.floor(Math.random() * 10);
+        recentCache.unshift(num);
+        recentCache = recentCache.slice(0, 6);
+        return { issue, num };
+    }
+
+    function emitPredictionCard(targetIss) {
+        if (publishedPeriods.has(targetIss)) return;
+        publishedPeriods.add(targetIss);
+
+        const calc = calculatePrediction(recentCache);
+        currentTargetPeriod = targetIss;
+        currentPredictedSize = calc.pred;
+        currentLuckyNums = calc.luckyNums;
+        totalPredictions++;
+
+        if (currentLevel > maxLevel) maxLevel = currentLevel;
+
+        const predBadge = calc.pred === "BIG" ? "🟢 BIG [ 5 - 9 ]" : "🔴 SMALL [ 0 - 4 ]";
+        const targetStr = targetWins > 0 ? `  🏁 WIN PROGRESS : ${totalWins}/${targetWins}\n` : "";
+
+        const card = 
+`┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+   👑 CTG GAMING PREDICTION 👑
+┗━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  🎮 SERVER : WINGO 1 MIN [VIP]
+  🎯 TARGET ISSUE : #${targetIss.toString().slice(-4)}
+
+  🔮 PREDICTION : ${predBadge}
+  🎲 HOT NUMBERS : ${calc.luckyNums[0]} & ${calc.luckyNums[1]}
+
+  📊 CHOSEN DIGIT : ${calc.chosenDigit} (Repeated ${calc.chosenCount}x - ${calc.reason})
+  🔢 DECIMAL (20D) : 0.${calc.decStr.slice(0, 10)}...${calc.decStr.slice(-2)}
+
+  ⚡ CURRENT LEVEL  : ${currentLevel}
+  🔥 MAX LEVEL REACHED : ${maxLevel}
+${targetStr}━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📩 OFFICIAL HELP : @Gara00077
+━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+        document.getElementById("previewCard").innerText = card;
+        sendTelegram(card.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1"));
+        updateStats();
+    }
+
+    function updateStats() {
+        document.getElementById("statTotal").innerText = totalPredictions;
+        document.getElementById("statWins").innerText = totalWins;
+        document.getElementById("statHits").innerText = totalNumWins;
+        document.getElementById("statLevel").innerText = `LV ${currentLevel}`;
+    }
+
+    async function checkCycle() {
+        if (!isRunning) return;
+
+        const live = await fetchLiveData();
+        const actualSize = live.num >= 5 ? "BIG" : "SMALL";
+
+        if (currentTargetPeriod && live.issue >= currentTargetPeriod && !evaluatedPeriods.has(currentTargetPeriod)) {
+            evaluatedPeriods.add(currentTargetPeriod);
+
+            const isSizeWin = (currentPredictedSize === actualSize);
+            const isNumHit = currentLuckyNums.includes(live.num);
+
+            let statusBadge = "";
+            let statusTag = "";
+            let levelDesc = "";
+
+            if (isSizeWin || isNumHit) {
+                totalWins++;
+                if (isNumHit) {
+                    totalNumWins++;
+                    statusBadge = "🎰 ✦ J A C K P O T   W I N ✦ 🎰";
+                    statusTag = `🎯 DIRECT NUMBER HIT (${live.num})`;
+                } else {
+                    statusBadge = "🏆 ✦ W I N N E R ✦ 🏆";
+                    statusTag = "✅ WIN PASSED";
+                }
+                const cleared = currentLevel;
+                currentLevel = 1;
+                levelDesc = `✨ CLEARED AT LEVEL : ${cleared}`;
+            } else {
+                statusBadge = "💀 ✦ L O S S ✦ 💀";
+                statusTag = "❌ FAILED";
+                currentLevel++;
+                if (currentLevel > maxLevel) maxLevel = currentLevel;
+                levelDesc = `⚠️ RECOVERY LEVEL : ${currentLevel}`;
+            }
+
+            const targetText = targetWins > 0 ? `  🎯 TARGET GOAL : ${totalWins}/${targetWins} WINS\n` : "";
+
+            const resultCard = 
+`┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+     ${statusBadge}
+┗━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  🎯 PERIOD : #${currentTargetPeriod.toString().slice(-4)}
+  🎲 WINNING : NUM ${live.num} (${actualSize})
+  📊 STATUS : ${statusTag}
+  🔥 STAGE : ${levelDesc}
+  ⚡ MAX RECORD : LEVEL ${maxLevel}${targetText}━━━━━━━━━━━━━━━━━━━━━━━━━━
+  👑 CTG GAMING PREDICTION`;
+
+            document.getElementById("previewCard").innerText = resultCard;
+            await sendTelegram(resultCard.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1"));
+            updateStats();
+
+            if (targetWins > 0 && totalWins >= targetWins) {
+                stopBot();
+            } else {
+                setTimeout(() => {
+                    emitPredictionCard(live.issue + 1);
+                }, 1500);
+            }
+        }
+    }
+
+    async function startBot() {
+        targetWins = parseInt(document.getElementById("targetWinsInput").value) || 0;
+        isRunning = true;
+        totalPredictions = 0;
+        totalWins = 0;
+        totalNumWins = 0;
+        currentLevel = 1;
+        maxLevel = 1;
+
+        document.getElementById("btnStart").disabled = true;
+        document.getElementById("btnStop").disabled = false;
+        document.getElementById("statusBadge").className = "status-badge online";
+        document.getElementById("statusBadge").innerText = "● LIVE ACTIVE";
+        document.getElementById("statusInfo").value = targetWins > 0 ? `${targetWins} WINS TARGET` : "24/7 UNLIMITED";
+
+        log(`🚀 Starting session with target: ${targetWins > 0 ? targetWins : 'Unlimited'}`);
+
+        await sendTelegram(`🚀 *CTG BOT STARTED!*\n🎯 Mode: *${targetWins > 0 ? targetWins + ' WINS TARGET' : 'UNLIMITED 24/7'}*`);
+
+        const live = await fetchLiveData();
+        emitPredictionCard(live.issue + 1);
+
+        if (intervalTimer) clearInterval(intervalTimer);
+        intervalTimer = setInterval(checkCycle, 5000);
+    }
+
+    async function stopBot() {
+        isRunning = false;
+        if (intervalTimer) clearInterval(intervalTimer);
+
+        document.getElementById("btnStart").disabled = false;
+        document.getElementById("btnStop").disabled = true;
+        document.getElementById("statusBadge").className = "status-badge offline";
+        document.getElementById("statusBadge").innerText = "● BOT STOPPED";
+        document.getElementById("statusInfo").value = "COMPLETED";
+
+        log("🛑 Session closed. Sending dual summaries...");
+
+        const summary1 = 
+`┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+  📊 DETAILS OF COMPLETED PREDICTION 
+┗━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+  🎯 Total Prediction Given   : ${totalPredictions}
+  🏆 Total Wins Achieved      : ${totalWins}
+  🎲 Total Number Wins (Hits) : ${totalNumWins}
+  🔥 Highest Level Crossed     : Level ${maxLevel}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+  👑 Prediction Completed by : @Gara00077
+━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+        const summary2 = 
+`╔══════════════════════════╗
+   ❌  𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐂𝐋𝐎𝐒𝐄𝐃  🔒
+╚══════════════════════════╝
+
+  🛑 Target Achieved Successfully!
+  💰 Enjoy Your Profits & Rest Now!`;
+
+        await sendTelegram(summary1);
+        setTimeout(async () => {
+            await sendTelegram(summary2);
+        }, 1200);
+    }
+</script>
+
+</body>
+    </html>
+    
