@@ -73,9 +73,7 @@ def calculate_prediction(history_list):
         selected_numbers = [int(item.get("number")) for item in history_list[:count_to_take]]
 
         concat_str = "".join(str(n) for n in selected_numbers)
-        divisor = int(concat_str)
-        if divisor == 0:
-            divisor = 1
+        divisor = int(concat_str) if int(concat_str) != 0 else 1
 
         division_val = Decimal(FIXED_DIVIDEND) / Decimal(divisor)
         decimal_parts = str(division_val).split(".")
@@ -235,8 +233,9 @@ def telegram_listener():
                 
                 if cmd in ["/start", "start"]:
                     target = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
-                    start_bot_session(target)
-                    send_telegram(f"✅ Bot started with {target if target>0 else '24/7'} wins target!", chat_id)
+                    if not bot_state["is_active"]:
+                        start_bot_session(target)
+                        send_telegram(f"✅ Bot started with {target if target>0 else '24/7'} wins target!", chat_id)
 
                 elif cmd in ["/schedule", "schedule"]:
                     if len(parts) >= 2:
@@ -362,3 +361,4 @@ while True:
         print("Loop Error:", e)
 
     time.sleep(5)
+                    
