@@ -3,20 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CYBER SIGNAL SYSTEM | VIP PREDICTOR</title>
+    <title>AKAZA VIP PREDICTOR</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #10b981;
             --primary-glow: rgba(16, 185, 129, 0.35);
             --bg-base: #f0fdf4;
-            --card-bg: #ffffff;
             --card-border: #bbf7d0;
             --text-dark: #064e3b;
-            --text-muted: #047857;
             --orange: #f97316;
             --orange-glow: rgba(249, 115, 22, 0.3);
-            --red: #ef4444;
         }
 
         * {
@@ -40,7 +37,7 @@
         .phone-wrapper {
             width: 100%;
             max-width: 440px;
-            background: #f8fafc;
+            background: #ffffff;
             border-radius: 28px;
             overflow: hidden;
             border: 2px solid var(--card-border);
@@ -51,7 +48,6 @@
             min-height: 94vh;
         }
 
-        /* ------------------ VIEW STATES ------------------ */
         .view-section {
             display: none;
             flex-direction: column;
@@ -62,7 +58,7 @@
             display: flex;
         }
 
-        /* ------------------ LOGIN SCREEN ------------------ */
+        /* LOGIN SCREEN */
         .login-card {
             margin: auto 0;
             background: #ffffff;
@@ -70,13 +66,12 @@
             border-radius: 24px;
             border: 2px solid var(--card-border);
             text-align: center;
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.12);
         }
         .login-logo {
-            width: 70px;
-            height: 70px;
+            width: 76px;
+            height: 76px;
             background: linear-gradient(135deg, var(--primary), #047857);
-            border-radius: 20px;
+            border-radius: 22px;
             margin: 0 auto 16px;
             display: flex;
             align-items: center;
@@ -87,33 +82,30 @@
             box-shadow: 0 8px 18px var(--primary-glow);
         }
         .login-title {
-            font-size: 1.4rem;
-            font-weight: 800;
+            font-size: 1.45rem;
+            font-weight: 900;
             color: var(--text-dark);
             letter-spacing: 0.5px;
         }
         .login-sub {
             font-size: 0.85rem;
-            color: var(--text-muted);
+            color: #047857;
             margin-top: 4px;
             margin-bottom: 22px;
-        }
-        .input-group {
-            position: relative;
-            margin-bottom: 16px;
+            font-weight: 600;
         }
         .key-input {
             width: 100%;
             padding: 14px 16px;
             border-radius: 14px;
             border: 2px solid var(--card-border);
-            font-size: 1rem;
+            font-size: 1.05rem;
             text-align: center;
             font-family: 'JetBrains Mono', monospace;
-            font-weight: 700;
+            font-weight: 800;
             outline: none;
             text-transform: uppercase;
-            transition: all 0.2s ease;
+            margin-bottom: 14px;
         }
         .key-input:focus {
             border-color: var(--primary);
@@ -127,10 +119,9 @@
             border-radius: 14px;
             border: none;
             font-size: 1rem;
-            font-weight: 800;
+            font-weight: 900;
             cursor: pointer;
             box-shadow: 0 8px 18px var(--primary-glow);
-            letter-spacing: 0.5px;
         }
         .contact-admin {
             margin-top: 18px;
@@ -139,11 +130,11 @@
         }
         .contact-admin a {
             color: var(--primary);
-            font-weight: 700;
+            font-weight: 800;
             text-decoration: none;
         }
 
-        /* ------------------ USER DASHBOARD UI (IMAGE MATCH) ------------------ */
+        /* USER PREDICTION SCREEN */
         .dash-header {
             display: flex;
             align-items: center;
@@ -171,16 +162,14 @@
             font-size: 1.1rem;
         }
         .brand-titles h2 {
-            font-size: 1.05rem;
-            font-weight: 800;
+            font-size: 1.1rem;
+            font-weight: 900;
             color: #064e3b;
-            letter-spacing: 0.3px;
         }
         .brand-titles p {
             font-size: 0.72rem;
             color: var(--orange);
             font-weight: 800;
-            letter-spacing: 0.5px;
         }
         .timer-circle {
             width: 48px;
@@ -203,7 +192,7 @@
         .timer-circle span:last-child {
             font-size: 0.55rem;
             font-weight: 800;
-            color: var(--text-muted);
+            color: #047857;
         }
 
         .pill-badge-bar {
@@ -215,7 +204,6 @@
             padding: 6px 10px;
             border-radius: 12px;
             border: 1px dashed var(--primary);
-            letter-spacing: 0.4px;
         }
 
         .promo-banner {
@@ -224,16 +212,11 @@
             padding: 10px 14px;
             text-align: center;
             color: #ffffff;
-            font-size: 0.8rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
+            font-size: 0.82rem;
+            font-weight: 800;
             box-shadow: 0 4px 12px var(--primary-glow);
         }
 
-        /* Signal Core Container */
         .signal-core {
             background: #ffffff;
             border: 2px solid var(--card-border);
@@ -244,7 +227,6 @@
             align-items: center;
             gap: 14px;
             box-shadow: 0 8px 20px rgba(16, 185, 129, 0.08);
-            position: relative;
         }
         .tag-row {
             width: 100%;
@@ -276,20 +258,16 @@
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 800;
-            letter-spacing: 0.5px;
             box-shadow: 0 4px 12px var(--orange-glow);
         }
-
-        /* Glow Circle Result */
         .orb-display {
-            width: 170px;
-            height: 170px;
+            width: 160px;
+            height: 160px;
             border-radius: 50%;
             border: 4px dashed var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
             background: radial-gradient(circle, #fff7ed 15%, transparent 70%);
         }
         .orb-inner {
@@ -300,20 +278,6 @@
             text-shadow: 0 4px 16px var(--orange-glow);
         }
 
-        .context-pill {
-            background: #fff7ed;
-            color: #c2410c;
-            border: 1px solid #ffedd5;
-            padding: 5px 14px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        /* Number Picks Box */
         .picks-box {
             width: 100%;
             background: #fafaf9;
@@ -326,7 +290,6 @@
             font-size: 0.75rem;
             font-weight: 800;
             color: var(--orange);
-            letter-spacing: 0.8px;
             margin-bottom: 10px;
         }
         .numbers-cluster {
@@ -360,7 +323,6 @@
             display: inline-block;
         }
 
-        /* Progress card */
         .analytics-card {
             background: #ffffff;
             border: 1.5px solid var(--card-border);
@@ -380,11 +342,10 @@
             height: 100%;
             background: linear-gradient(90deg, var(--primary), var(--orange));
             border-radius: 10px;
-            width: 75%;
+            width: 0%;
             transition: width 0.4s ease;
         }
 
-        /* Bottom Floating Bar */
         .bottom-nav {
             margin-top: auto;
             background: #ffffff;
@@ -398,8 +359,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 3px;
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             font-weight: 800;
             color: #64748b;
             cursor: pointer;
@@ -411,7 +371,7 @@
             color: #ffffff;
         }
 
-        /* ------------------ ADMIN PANEL UI ------------------ */
+        /* ADMIN PANEL */
         .admin-header {
             display: flex;
             justify-content: space-between;
@@ -422,8 +382,8 @@
             border-radius: 18px;
         }
         .admin-header h2 {
-            font-size: 1.1rem;
-            font-weight: 800;
+            font-size: 1.05rem;
+            font-weight: 900;
             color: #38bdf8;
         }
         .admin-section {
@@ -444,7 +404,7 @@
         }
         .color-palette {
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
         .color-swatch {
             width: 32px;
@@ -479,15 +439,12 @@
     <!-- 1. LOGIN SCREEN -->
     <div id="loginView" class="view-section active">
         <div class="login-card">
-            <div class="login-logo">CT</div>
-            <h1 class="login-title">CYBER SYSTEM ACCESS</h1>
-            <p class="login-sub">Enter VIP License Key to unlock real-time predictions</p>
+            <div class="login-logo">AK</div>
+            <h1 class="login-title">AKAZA VIP SYSTEM</h1>
+            <p class="login-sub">Enter Access License Key to unlock predictions</p>
             
-            <div class="input-group">
-                <input type="text" id="accessKeyInput" class="key-input" placeholder="PASTE ACCESS KEY" autocomplete="off">
-            </div>
-
-            <button class="btn-main" onclick="verifyKeyLogin()">UNLOCK ACCESS ➔</button>
+            <input type="text" id="accessKeyInput" class="key-input" placeholder="ENTER ACCESS KEY" autocomplete="off">
+            <button class="btn-main" onclick="verifyKeyLogin()">UNLOCK DASHBOARD ➔</button>
 
             <div class="contact-admin">
                 Need VIP Key? Contact Admin <br>
@@ -496,16 +453,15 @@
         </div>
     </div>
 
-    <!-- 2. USER PREDICTION DASHBOARD (CLONED EXACTLY TO IMAGE) -->
+    <!-- 2. USER PREDICTION DASHBOARD -->
     <div id="dashboardView" class="view-section">
         
-        <!-- Header -->
         <div class="dash-header">
             <div class="brand-meta">
-                <div class="avatar-box">CT</div>
+                <div class="avatar-box">AK</div>
                 <div class="brand-titles">
-                    <h2>CYBER TAMILAN</h2>
-                    <p>CYBER SIGNAL SYSTEM</p>
+                    <h2>AKAZA PREDICTOR</h2>
+                    <p>AKAZA VIP GAMING SYSTEM</p>
                 </div>
             </div>
             <div class="timer-circle">
@@ -515,18 +471,17 @@
         </div>
 
         <div class="pill-badge-bar">
-            ● LIVE FEED ACTIVE • WINGO 1 MIN • AUTO SYNC
+            ● LIVE ACTIVE • WINGO 1 MIN • ALGO 2738
         </div>
 
         <div class="promo-banner">
-            ✈ JOIN OFFICIAL TELEGRAM • @Gara00077
+            ✈ OFFICIAL TELEGRAM • @Gara00077
         </div>
 
-        <!-- Central Prediction Box -->
         <div class="signal-core">
             <div class="tag-row">
-                <div class="pattern-tag">ALL PATTERNS</div>
-                <div id="accDisplay" class="acc-tag">ACC 92%</div>
+                <div class="pattern-tag">ALGO ENGINE</div>
+                <div id="accDisplay" class="acc-tag">ACC 94%</div>
             </div>
 
             <div id="roundIdBadge" class="round-badge">ROUND / ID • #000000</div>
@@ -535,13 +490,8 @@
                 <div id="predictedSize" class="orb-inner">BIG</div>
             </div>
 
-            <div class="context-pill">
-                ● Recent 2-step context • Single Trend
-            </div>
-
-            <!-- Number Picks Box -->
             <div class="picks-box">
-                <div class="picks-label">NUMBER PICKS</div>
+                <div class="picks-label">HOT NUMBER PICKS</div>
                 <div class="numbers-cluster">
                     <div id="hotNum1" class="num-circle">6</div>
                     <div id="hotNum2" class="num-circle">7</div>
@@ -550,50 +500,48 @@
             </div>
         </div>
 
-        <!-- Model Support Bar -->
         <div class="analytics-card">
             <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:800; color:#065f46;">
                 <span id="sessionStatusText">Model support • Target wins: 10</span>
                 <span id="progressWinCount" style="color:var(--orange);">0/10 WINS</span>
             </div>
             <div class="bar-wrap">
-                <div id="sessionProgressBar" class="bar-fill" style="width: 0%;"></div>
+                <div id="sessionProgressBar" class="bar-fill"></div>
             </div>
         </div>
 
-        <!-- Navigation Bar -->
         <div class="bottom-nav">
-            <div class="nav-item active">⌂ HOME</div>
-            <div class="nav-item" onclick="openKeyModal()">🔑 KEY VALIDITY</div>
-            <div class="nav-item" onclick="logout()">🔒 LOGOUT</div>
+            <div class="nav-item active">⌂ DASHBOARD</div>
+            <div class="nav-item" onclick="showKeyInfo()">🔑 KEY INFO</div>
+            <div class="nav-item" onclick="logoutApp()">🔒 LOGOUT</div>
         </div>
     </div>
 
     <!-- 3. ADMIN PANEL SCREEN -->
     <div id="adminView" class="view-section">
         <div class="admin-header">
-            <h2>👑 MASTER ADMIN CONTROLLER</h2>
-            <button onclick="logout()" style="background:#ef4444; color:#fff; border:none; padding:4px 10px; border-radius:8px; font-weight:800;">EXIT</button>
+            <h2>👑 AKAZA MASTER ADMIN</h2>
+            <button onclick="logoutApp()" style="background:#ef4444; color:#fff; border:none; padding:4px 10px; border-radius:8px; font-weight:800;">EXIT</button>
         </div>
 
         <!-- Session Controls -->
         <div class="admin-section">
             <div class="admin-title">
                 <span>🎮 SESSION CONTROL</span>
-                <span id="adminSessionStatus" style="color:var(--orange);">STOPPED</span>
+                <span id="adminSessionStatus" style="color:var(--orange);">READY</span>
             </div>
             <div style="display:flex; gap:8px;">
-                <input type="number" id="adminTargetWins" placeholder="Target Wins (e.g. 10)" value="10" style="flex:1; padding:10px; border-radius:10px; border:1px solid #cbd5e1;">
+                <input type="number" id="adminTargetWins" placeholder="Target Wins" value="10" style="flex:1; padding:10px; border-radius:10px; border:1px solid #cbd5e1; font-weight:800;">
                 <button onclick="adminStartSession()" style="background:var(--primary); color:white; border:none; padding:10px 14px; border-radius:10px; font-weight:800;">START</button>
                 <button onclick="adminStopSession()" style="background:#ef4444; color:white; border:none; padding:10px 14px; border-radius:10px; font-weight:800;">STOP</button>
             </div>
         </div>
 
-        <!-- Automated Time Scheduler -->
+        <!-- Auto Scheduler -->
         <div class="admin-section">
             <div class="admin-title">⏰ AUTO SCHEDULE ENGINE</div>
             <div style="display:flex; gap:8px;">
-                <input type="time" id="adminScheduleTime" style="flex:1; padding:10px; border-radius:10px; border:1px solid #cbd5e1;">
+                <input type="time" id="adminScheduleTime" style="flex:1; padding:10px; border-radius:10px; border:1px solid #cbd5e1; font-weight:800;">
                 <button onclick="adminSetSchedule()" style="background:#0f172a; color:white; border:none; padding:10px 14px; border-radius:10px; font-weight:800;">SET TIMER</button>
             </div>
             <div id="scheduleMsg" style="font-size:0.75rem; color:#047857; font-weight:700;">No schedule active.</div>
@@ -603,8 +551,46 @@
         <div class="admin-section">
             <div class="admin-title">🔑 USER KEY GENERATOR</div>
             <div style="display:flex; gap:8px;">
-                <select id="keyValidityHours" style="flex:1; padding:10px; border-radius:10px; border:1px solid #cbd5e1;">
+                <select id="keyValidityHours" style="flex:1; padding:10px; border-radius:10px; border:1px solid #cbd5e1; font-weight:700;">
                     <option value="1">1 Hour Access</option>
                     <option value="6">6 Hours Access</option>
                     <option value="24">24 Hours (1 Day)</option>
-                    <op
+                    <option value="168">7 Days Access</option>
+                </select>
+                <button onclick="adminGenerateKey()" style="background:var(--orange); color:white; border:none; padding:10px 14px; border-radius:10px; font-weight:800;">CREATE KEY</button>
+            </div>
+            <div class="key-list-box" id="adminKeyList"></div>
+        </div>
+
+        <!-- UI Color Theme Picker -->
+        <div class="admin-section">
+            <div class="admin-title">🎨 UI COLOR THEMES</div>
+            <div class="color-palette">
+                <div class="color-swatch" style="background:#10b981;" onclick="setThemeColor('#10b981', '#f0fdf4', '#bbf7d0')"></div>
+                <div class="color-swatch" style="background:#06b6d4;" onclick="setThemeColor('#06b6d4', '#ecfeff', '#a5f3fc')"></div>
+                <div class="color-swatch" style="background:#8b5cf6;" onclick="setThemeColor('#8b5cf6', '#f5f3ff', '#ddd6fe')"></div>
+                <div class="color-swatch" style="background:#f97316;" onclick="setThemeColor('#f97316', '#fff7ed', '#fed7aa')"></div>
+                <div class="color-swatch" style="background:#e11d48;" onclick="setThemeColor('#e11d48', '#fff1f2', '#fecdd3')"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const FIXED_DIVIDEND = 2738;
+    const API_URL = "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
+
+    let appState = {
+        isSessionRunning: true,
+        targetWins: 10,
+        currentWins: 0,
+        targetIssue: 0,
+        predictedSize: "BIG",
+        predictedHotNums: [6, 7],
+        scheduledTime: null
+    };
+
+    let userKeys = JSON.parse(localStorage.getItem("akaza_keys") || "{}");
+    // Default VIP Key setup
+    if (!userKeys["AK
