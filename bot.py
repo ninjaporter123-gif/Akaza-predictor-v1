@@ -8,13 +8,13 @@ import requests
 
 getcontext().prec = 50
 
-# ----------------- HEALTH CHECK SERVER -----------------
+# ----------------- BACK4APP WEB SERVER -----------------
 class HealthHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write(b"CTG Gaming Prediction Bot Running 24/7!")
+        self.wfile.write(b"Bot is Running 24/7!")
 
     def log_message(self, format, *args):
         pass
@@ -56,14 +56,13 @@ last_processed_issue = None
 previous_prediction = None
 previous_lucky_nums = []
 target_issue = None
+is_starting_lock = False
 
 def send_telegram(text, target_chat=CHAT_ID):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {"chat_id": target_chat, "text": text, "parse_mode": "Markdown"}
     try:
-        r = requests.post(url, json=payload, timeout=10)
-        if not r.ok:
-            print(f"[TG ERROR] {r.status_code}: {r.text}")
+        requests.post(url, json=payload, timeout=8)
     except Exception as e:
         print("[TG EXCEPTION]", e)
 
@@ -113,31 +112,6 @@ def calculate_prediction(history_list):
         print("[CALC ERROR]", e)
         return "BIG", 7, 2, "27380000000000000078", [7, 8], "Algorithm Auto"
 
-def send_session_closed_summary():
-    msg_1 = (
-        f"┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
-        f"  📊 *DETAILS OF COMPLETED PREDICTION* \n"
-        f"┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
-        f"  🎯 *Total Prediction Given*   : *{bot_state['total_predictions']}*\n"
-        f"  🏆 *Total Wins Achieved*      : *{bot_state['total_wins']}*\n"
-        f"  🎲 *Total Number Wins (Hits)* : *{bot_state['total_num_wins']}*\n"
-        f"  🔥 *Highest Level Crossed*     : *Level {bot_state['max_level']}*\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"  👑 *Prediction Completed by* : *@Gara00077*\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    )
-    send_telegram(msg_1)
-    time.sleep(1)
-
-    msg_2 = (
-        f"╔══════════════════════════╗\n"
-        f"   ❌  *𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐂𝐋𝐎𝐒𝐄𝐃*  🔒\n"
-        f"╚══════════════════════════╝\n\n"
-        f"  🛑 *Target Achieved Successfully!*\n"
-        f"  💰 *Enjoy Your Profits & Rest Now!*"
-    )
-    send_telegram(msg_2)
-
 def fetch_history_data():
     try:
         resp = requests.get(API_URL, params={"pageNo": 1, "pageSize": 10}, headers=HEADERS, timeout=8)
@@ -183,9 +157,10 @@ def broadcast_prediction(target_iss, history_list):
     send_telegram(signal_msg)
 
 def start_bot_session(target):
-    global target_issue, last_processed_issue
-    if bot_state["is_active"]:
+    global target_issue, last_processed_issue, is_starting_lock
+    if bot_state["is_active"] or is_starting_lock:
         return
+    is_starting_lock = True
     bot_state["is_active"] = True
     bot_state["target_wins"] = target
     bot_state["total_predictions"] = 0
@@ -197,9 +172,9 @@ def start_bot_session(target):
     
     mode = f"{target} WINS TARGET" if target > 0 else "UNLIMITED 24/7"
     send_telegram(f"🚀 *CTG BOT STARTED!*\n🎯 Mode: *{mode}*")
-    time.sleep(1)
+    time.sleep(2)
 
-    # Initial Signal Dispatch
+    # Force initial prediction on startup
     data_list = fetch_history_data()
     if data_list and len(data_list) >= 6:
         latest = data_list[0]
@@ -207,17 +182,38 @@ def start_bot_session(target):
         last_processed_issue = curr_issue
         target_issue = curr_issue + 1
         broadcast_prediction(target_issue, data_list)
+    is_starting_lock = False
 
 def stop_bot_session():
     if bot_state["is_active"]:
         bot_state["is_active"] = False
-        send_session_closed_summary()
+        msg_1 = (
+            f"┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
+            f"  📊 *DETAILS OF COMPLETED PREDICTION* \n"
+            f"┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
+            f"  🎯 *Total Prediction Given*   : *{bot_state['total_predictions']}*\n"
+            f"  🏆 *Total Wins Achieved*      : *{bot_state['total_wins']}*\n"
+            f"  🎲 *Total Number Wins (Hits)* : *{bot_state['total_num_wins']}*\n"
+            f"  🔥 *Highest Level Crossed*     : *Level {bot_state['max_level']}*\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"  👑 *Prediction Completed by* : *@Gara00077*\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        )
+        send_telegram(msg_1)
+        time.sleep(1)
+        msg_2 = (
+            f"╔══════════════════════════╗\n"
+            f"   ❌  *𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐂𝐋𝐎𝐒𝐄𝐃*  🔒\n"
+            f"╚══════════════════════════╝\n\n"
+            f"  🛑 *Target Achieved Successfully!*\n"
+            f"  💰 *Enjoy Your Profits & Rest Now!*"
+        )
+        send_telegram(msg_2)
     else:
         bot_state["scheduled_time"] = None
 
 def telegram_listener():
     last_update_id = 0
-    # Clear backlog old messages
     try:
         init_res = requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset=-1", timeout=8).json()
         results = init_res.get("result", [])
@@ -229,8 +225,8 @@ def telegram_listener():
     while True:
         try:
             url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-            params = {"offset": last_update_id + 1, "timeout": 15}
-            resp = requests.get(url, params=params, timeout=20).json()
+            params = {"offset": last_update_id + 1, "timeout": 10}
+            resp = requests.get(url, params=params, timeout=15).json()
             
             for update in resp.get("result", []):
                 last_update_id = update["update_id"]
@@ -246,10 +242,10 @@ def telegram_listener():
                 if cmd in ["/start", "start"]:
                     target = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
                     if not bot_state["is_active"]:
+                        send_telegram(f"✅ Bot starting with {target if target>0 else '24/7'} wins target...", chat_id)
                         start_bot_session(target)
-                        send_telegram(f"✅ Bot started with {target if target>0 else '24/7'} wins target!", chat_id)
                     else:
-                        send_telegram("⚠️ Session already in progress!", chat_id)
+                        send_telegram("⚠️ Session already running!", chat_id)
 
                 elif cmd in ["/schedule", "schedule"]:
                     if len(parts) >= 2:
@@ -271,10 +267,9 @@ def telegram_listener():
 
 threading.Thread(target=telegram_listener, daemon=True).start()
 
-# Main Loop (Every 4 seconds check API)
+# Main Check Loop
 while True:
     try:
-        # Schedule Check (IST)
         if not bot_state["is_active"] and bot_state["scheduled_time"]:
             now_utc = datetime.datetime.utcnow()
             now_ist = now_utc + datetime.timedelta(hours=5, minutes=30)
@@ -282,7 +277,6 @@ while True:
             if now_ist.hour == sh and now_ist.minute == sm:
                 start_bot_session(bot_state["scheduled_target"])
 
-        # Signal Verification & Next Prediction
         if bot_state["is_active"]:
             data_list = fetch_history_data()
 
@@ -349,4 +343,4 @@ while True:
         print("[LOOP ERROR]", e)
 
     time.sleep(4)
-    
+                        
