@@ -1,12 +1,35 @@
+import http.server
+import socketserver
 import sys
+import threading
 import time
 from collections import Counter
 from decimal import Decimal, getcontext
 import requests
 
+# Set Precision
 getcontext().prec = 50
 
-# Target wins from command line: 0 means unlimited
+# ----------------- BACK4APP HEALTH CHECK WEB SERVER -----------------
+# Back4App requires an active HTTP port to keep container alive
+class HealthHandler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"CTG Gaming Prediction Bot is Running 24/7!")
+
+    def log_message(self, format, *args):
+        pass  # Suppress web server logs
+
+def run_web_server():
+    port = 8080
+    with socketserver.TCPServer(("", port), HealthHandler) as httpd:
+        httpd.serve_forever()
+
+threading.Thread(target=run_web_server, daemon=True).start()
+# --------------------------------------------------------------------
+
 target_wins = 0
 if len(sys.argv) > 1:
     try:
@@ -34,7 +57,6 @@ target_issue = None
 current_level = 1
 max_level_reached = 1
 
-# Session Analytics
 total_predictions_given = 0
 total_wins_count = 0
 total_number_wins = 0
@@ -55,7 +77,6 @@ def calculate_prediction(history_list):
     try:
         latest_num = int(history_list[0].get("number"))
 
-        # Odd aithe 5 results, Even aithe 6 results
         count_to_take = 5 if (latest_num % 2 != 0) else 6
         selected_numbers = [
             int(item.get("number")) for item in history_list[:count_to_take]
@@ -77,7 +98,6 @@ def calculate_prediction(history_list):
         if len(decimal_str) < 20:
             decimal_str = decimal_str.ljust(20, "0")
 
-        # 20 decimals lo last 2 digits
         d1 = decimal_str[-2]
         d2 = decimal_str[-1]
         n1 = int(d1)
@@ -86,14 +106,12 @@ def calculate_prediction(history_list):
         size1 = "BIG" if n1 >= 5 else "SMALL"
         size2 = "BIG" if n2 >= 5 else "SMALL"
 
-        # Rendu same size aithe direct ga adhe decision
         if size1 == size2:
             pred = size1
             chosen_digit = n1
             chosen_count = decimal_str.count(d1)
             reason = f"Both {size1}"
         else:
-            # Okati BIG mariyu okati SMALL aithe 20 decimals lo majority check
             c1 = decimal_str.count(d1)
             c2 = decimal_str.count(d2)
             if c1 >= c2:
@@ -114,7 +132,6 @@ def calculate_prediction(history_list):
 
 
 def send_session_closed_summary():
-    # Message NO :- 1
     msg_1 = (
         f"┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
         f"  📊 *DETAILS OF COMPLETED PREDICTION* \n"
@@ -130,7 +147,6 @@ def send_session_closed_summary():
     send_telegram(msg_1)
     time.sleep(1)
 
-    # Message NO :- 2
     msg_2 = (
         f"╔══════════════════════════╗\n"
         f"   ❌  *𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐂𝐋𝐎𝐒𝐄𝐃*  🔒\n"
@@ -168,7 +184,6 @@ def check_and_process():
             actual_size = "BIG" if result_num >= 5 else "SMALL"
 
             if current_issue != last_processed_issue:
-                # 1. Result Verification Card
                 if target_issue and current_issue == target_issue:
                     is_size_win = previous_prediction == actual_size
                     is_number_hit = result_num in previous_lucky_nums
@@ -226,7 +241,6 @@ def check_and_process():
 
                 last_processed_issue = current_issue
 
-                # 2. Next Round Prediction
                 target_issue = current_issue + 1
 
                 (
@@ -293,4 +307,4 @@ while True:
     if not is_running:
         break
     time.sleep(5)
-    
+                                     
