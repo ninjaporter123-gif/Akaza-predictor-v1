@@ -8,7 +8,7 @@ import requests
 
 getcontext().prec = 50
 
-# ----------------- BACK4APP HEALTH CHECK WEB SERVER -----------------
+# ----------------- HEALTH CHECK SERVER -----------------
 class HealthHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -27,7 +27,7 @@ def run_web_server():
         print("[HTTP ERROR]", e)
 
 threading.Thread(target=run_web_server, daemon=True).start()
-# --------------------------------------------------------------------
+# --------------------------------------------------------
 
 API_URL = "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json"
 BOT_TOKEN = "8662159068:AAFhMvrJUVC1Sj4EG8rVDkuJhAXvtT5PYq8"
@@ -36,9 +36,6 @@ CHAT_ID = "-1004446531098"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Origin": "https://ar-lottery01.com",
-    "Referer": "https://ar-lottery01.com/",
 }
 
 FIXED_DIVIDEND = 2738
@@ -143,39 +140,25 @@ def send_session_closed_summary():
 
 def fetch_history_data():
     try:
-        resp = requests.get(API_URL, params={"pageNo": 1, "pageSize": 10}, headers=HEADERS, timeout=10)
+        resp = requests.get(API_URL, params={"pageNo": 1, "pageSize": 10}, headers=HEADERS, timeout=8)
         if resp.status_code == 200:
             res_data = resp.json()
             data_list = res_data.get("data", {}).get("list", []) or res_data.get("list", [])
             if data_list:
                 return data_list
-        print(f"[API STATUS] Returned HTTP {resp.status_code}")
     except Exception as e:
-        print("[API FETCH FAILED]", e)
+        print("[API FAILED]", e)
     return None
 
-def emit_initial_prediction():
-    global target_issue, previous_prediction, previous_lucky_nums, last_processed_issue
-    print("[INIT] Triggering first prediction...")
-    data_list = fetch_history_data()
-
-    if data_list and len(data_list) >= 6:
-        latest = data_list[0]
-        current_issue = int(latest.get("issueNumber") or latest.get("period"))
-        last_processed_issue = current_issue
-        target_issue = current_issue + 1
-    else:
-        # Fallback issue number if API blocked
-        now_ts = int(time.time())
-        current_issue = 202610110000 + (now_ts % 1440)
-        last_processed_issue = current_issue
-        target_issue = current_issue + 1
-        data_list = [{"number": 7}, {"number": 3}, {"number": 8}, {"number": 1}, {"number": 9}, {"number": 4}]
-
-    pred, chosen_digit, count, dec_str, lucky_nums, reason = calculate_prediction(data_list)
+def broadcast_prediction(target_iss, history_list):
+    global previous_prediction, previous_lucky_nums
+    pred, chosen_digit, count, dec_str, lucky_nums, reason = calculate_prediction(history_list)
     previous_prediction = pred
     previous_lucky_nums = lucky_nums
     bot_state["total_predictions"] += 1
+
+    if bot_state["current_level"] > bot_state["max_level"]:
+        bot_state["max_level"] = bot_state["current_level"]
 
     pred_display = "🟢 *BIG [ 5 - 9 ]*" if pred == "BIG" else "🔴 *SMALL [ 0 - 4 ]*"
     win_progress = f"  🏁 *WIN PROGRESS* : *{bot_state['total_wins']}/{bot_state['target_wins']}*\n" if bot_state['target_wins'] > 0 else ""
@@ -185,7 +168,7 @@ def emit_initial_prediction():
         f"   👑 *CTG GAMING PREDICTION* 👑\n"
         f"┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
         f"  🎮 *SERVER* : *WINGO 1 MIN [VIP]*\n"
-        f"  🎯 *TARGET ISSUE* : `#{str(target_issue)[-4:]}`\n\n"
+        f"  🎯 *TARGET ISSUE* : `#{str(target_iss)[-4:]}`\n\n"
         f"  🔮 *PREDICTION* : {pred_display}\n"
         f"  🎲 *HOT NUMBERS* : `{lucky_nums[0]}` *&* `{lucky_nums[1]}`\n\n"
         f"  📊 *CHOSEN DIGIT* : `{chosen_digit}` *(Repeated {count}x - {reason})*\n"
@@ -198,9 +181,9 @@ def emit_initial_prediction():
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
     )
     send_telegram(signal_msg)
-    print(f"[INIT SUCCESS] Signal posted for issue #{target_issue}")
 
 def start_bot_session(target):
+    global target_issue, last_processed_issue
     if bot_state["is_active"]:
         return
     bot_state["is_active"] = True
@@ -215,7 +198,15 @@ def start_bot_session(target):
     mode = f"{target} WINS TARGET" if target > 0 else "UNLIMITED 24/7"
     send_telegram(f"🚀 *CTG BOT STARTED!*\n🎯 Mode: *{mode}*")
     time.sleep(1)
-    emit_initial_prediction()
+
+    # Initial Signal Dispatch
+    data_list = fetch_history_data()
+    if data_list and len(data_list) >= 6:
+        latest = data_list[0]
+        curr_issue = int(latest.get("issueNumber") or latest.get("period"))
+        last_processed_issue = curr_issue
+        target_issue = curr_issue + 1
+        broadcast_prediction(target_issue, data_list)
 
 def stop_bot_session():
     if bot_state["is_active"]:
@@ -226,8 +217,9 @@ def stop_bot_session():
 
 def telegram_listener():
     last_update_id = 0
+    # Clear backlog old messages
     try:
-        init_res = requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset=-1", timeout=10).json()
+        init_res = requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset=-1", timeout=8).json()
         results = init_res.get("result", [])
         if results:
             last_update_id = results[-1]["update_id"]
@@ -237,20 +229,17 @@ def telegram_listener():
     while True:
         try:
             url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-            params = {"offset": last_update_id + 1, "timeout": 20}
-            resp = requests.get(url, params=params, timeout=25).json()
+            params = {"offset": last_update_id + 1, "timeout": 15}
+            resp = requests.get(url, params=params, timeout=20).json()
             
             for update in resp.get("result", []):
                 last_update_id = update["update_id"]
                 msg_obj = update.get("message", {})
                 chat_id = str(msg_obj.get("chat", {}).get("id"))
                 msg = msg_obj.get("text", "").strip()
-                if not msg:
+                if not msg or chat_id == CHAT_ID:
                     continue
 
-                if chat_id == CHAT_ID:
-                    continue
-                
                 parts = msg.split()
                 cmd = parts[0].lower()
                 
@@ -259,6 +248,8 @@ def telegram_listener():
                     if not bot_state["is_active"]:
                         start_bot_session(target)
                         send_telegram(f"✅ Bot started with {target if target>0 else '24/7'} wins target!", chat_id)
+                    else:
+                        send_telegram("⚠️ Session already in progress!", chat_id)
 
                 elif cmd in ["/schedule", "schedule"]:
                     if len(parts) >= 2:
@@ -280,9 +271,10 @@ def telegram_listener():
 
 threading.Thread(target=telegram_listener, daemon=True).start()
 
-# Main Prediction Loop
+# Main Loop (Every 4 seconds check API)
 while True:
     try:
+        # Schedule Check (IST)
         if not bot_state["is_active"] and bot_state["scheduled_time"]:
             now_utc = datetime.datetime.utcnow()
             now_ist = now_utc + datetime.timedelta(hours=5, minutes=30)
@@ -290,6 +282,7 @@ while True:
             if now_ist.hour == sh and now_ist.minute == sm:
                 start_bot_session(bot_state["scheduled_target"])
 
+        # Signal Verification & Next Prediction
         if bot_state["is_active"]:
             data_list = fetch_history_data()
 
@@ -300,7 +293,7 @@ while True:
                 actual_size = "BIG" if result_num >= 5 else "SMALL"
 
                 if current_issue != last_processed_issue:
-                    if target_issue and current_issue == target_issue:
+                    if target_issue and current_issue >= target_issue:
                         is_size_win = previous_prediction == actual_size
                         is_number_hit = result_num in previous_lucky_nums
 
@@ -349,38 +342,11 @@ while True:
 
                     if bot_state["is_active"]:
                         target_issue = current_issue + 1
-                        pred, chosen_digit, count, dec_str, lucky_nums, reason = calculate_prediction(data_list)
-                        previous_prediction = pred
-                        previous_lucky_nums = lucky_nums
-                        bot_state["total_predictions"] += 1
-
-                        if bot_state["current_level"] > bot_state["max_level"]:
-                            bot_state["max_level"] = bot_state["current_level"]
-
-                        pred_display = "🟢 *BIG [ 5 - 9 ]*" if pred == "BIG" else "🔴 *SMALL [ 0 - 4 ]*"
-                        win_progress = f"  🏁 *WIN PROGRESS* : *{bot_state['total_wins']}/{bot_state['target_wins']}*\n" if bot_state['target_wins'] > 0 else ""
-
-                        signal_msg = (
-                            f"┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
-                            f"   👑 *CTG GAMING PREDICTION* 👑\n"
-                            f"┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
-                            f"  🎮 *SERVER* : *WINGO 1 MIN [VIP]*\n"
-                            f"  🎯 *TARGET ISSUE* : `#{str(target_issue)[-4:]}`\n\n"
-                            f"  🔮 *PREDICTION* : {pred_display}\n"
-                            f"  🎲 *HOT NUMBERS* : `{lucky_nums[0]}` *&* `{lucky_nums[1]}`\n\n"
-                            f"  📊 *CHOSEN DIGIT* : `{chosen_digit}` *(Repeated {count}x - {reason})*\n"
-                            f"  🔢 *DECIMAL (20D)* : `0.{dec_str[:10]}...{dec_str[-2:]}`\n\n"
-                            f"  ⚡ *CURRENT LEVEL  : {bot_state['current_level']}*\n"
-                            f"  🔥 *MAX LEVEL REACHED : {bot_state['max_level']}*\n"
-                            f"{win_progress}"
-                            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                            f"  📩 *OFFICIAL HELP* : *@Gara00077*\n"
-                            f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                        )
-                        send_telegram(signal_msg)
+                        time.sleep(1)
+                        broadcast_prediction(target_issue, data_list)
 
     except Exception as e:
-        print("[LOOP EXCEPTION]", e)
+        print("[LOOP ERROR]", e)
 
-    time.sleep(5)
-                                
+    time.sleep(4)
+    
