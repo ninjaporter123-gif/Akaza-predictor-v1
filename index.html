@@ -46,16 +46,8 @@
             flex-direction: column;
             position: relative;
             min-height: 94vh;
-        }
-
-        .view-section {
-            display: none !important;
-            flex-direction: column;
             padding: 16px;
             gap: 14px;
-        }
-        .view-section.active {
-            display: flex !important;
         }
 
         /* LOGIN */
@@ -436,13 +428,13 @@
 <div class="phone-wrapper">
 
     <!-- 1. LOGIN SCREEN -->
-    <div id="loginView" class="view-section active">
+    <div id="loginView" style="display:flex; flex-direction:column; gap:14px;">
         <div class="login-card">
             <div class="login-logo">AK</div>
             <h1 class="login-title">AKAZA VIP SYSTEM</h1>
             <p class="login-sub">Enter Access License Key to unlock predictions</p>
             
-            <input type="text" id="accessKeyInput" class="key-input" placeholder="ENTER ACCESS KEY" autocomplete="off" onkeydown="if(event.key==='Enter') verifyKeyLogin()">
+            <input type="text" id="accessKeyInput" class="key-input" placeholder="ENTER ACCESS KEY">
             <button class="btn-main" onclick="verifyKeyLogin()">UNLOCK DASHBOARD ➔</button>
 
             <div class="contact-admin">
@@ -453,7 +445,7 @@
     </div>
 
     <!-- 2. USER PREDICTION DASHBOARD -->
-    <div id="dashboardView" class="view-section">
+    <div id="dashboardView" style="display:none; flex-direction:column; gap:14px;">
         <div class="dash-header">
             <div class="brand-meta">
                 <div class="avatar-box">AK</div>
@@ -515,7 +507,7 @@
     </div>
 
     <!-- 3. ADMIN PANEL SCREEN -->
-    <div id="adminView" class="view-section">
+    <div id="adminView" style="display:none; flex-direction:column; gap:14px;">
         <div class="admin-header">
             <h2>👑 AKAZA MASTER ADMIN</h2>
             <button onclick="logoutApp()" style="background:#ef4444; color:#fff; border:none; padding:4px 10px; border-radius:8px; font-weight:800;">EXIT</button>
@@ -580,30 +572,29 @@
         userKeys = {};
     }
 
-    // Default Permitted Keys
-    userKeys["AKAZA100"] = { expiry: Date.now() + 8640000000, hours: 2400 };
-    userKeys["VIP"] = { expiry: Date.now() + 8640000000, hours: 2400 };
-
-    function showView(viewId) {
-        document.getElementById("loginView").classList.remove("active");
-        document.getElementById("dashboardView").classList.remove("active");
-        document.getElementById("adminView").classList.remove("active");
-        document.getElementById(viewId).classList.add("active");
-    }
-
     function verifyKeyLogin() {
-        const inputKey = (document.getElementById("accessKeyInput").value || "").trim().toUpperCase();
+        const raw = document.getElementById("accessKeyInput").value || "";
+        const key = raw.replace(/\s+/g, '').toUpperCase();
         
-        if (!inputKey) {
-            alert("Key enter pannunga!");
+        if (!key) {
+            alert("Please enter a key!");
             return;
         }
 
-        // Admin Keys
-        if (inputKey === "777" || inputKey === "ADMIN777" || inputKey === "ADMIN") {
+        // 1. Admin Master Gateway
+        if (key === "777" || key === "ADMIN777" || key === "ADMIN") {
+            document.getElementById("loginView").style.display = "none";
+            document.getElementById("dashboardView").style.display = "none";
+            document.getElementById("adminView").style.display = "flex";
             renderAdminKeys();
-            showView("adminView");
             return;
         }
 
-        // VIP 
+        // 2. VIP User Gateway (AKAZA100, VIP, AKAZA, or Generated Keys)
+        if (key === "AKAZA100" || key === "VIP" || key === "AKAZA" || (userKeys[key] && Date.now() < userKeys[key].expiry)) {
+            document.getElementById("loginView").style.display = "none";
+            document.getElementById("adminView").style.display = "none";
+            document.getElementById("dashboardView").style.display = "flex";
+            syncPrediction();
+            return;
+   
