@@ -1,11 +1,34 @@
 import datetime
+import http.server
 import random
+import socketserver
 import threading
 import time
 from decimal import Decimal, getcontext
 import requests
 
 getcontext().prec = 50
+
+# ----------------- RENDER WEB SERVICE PORT BINDING -----------------
+class HealthCheckHandler(http.server.SimpleHTTPRequestHandler):
+  def do_GET(self):
+    self.send_response(200)
+    self.send_header("Content-type", "text/plain")
+    self.end_headers()
+    self.wfile.write(b"CTG Gaming Prediction Bot Live 24/7!")
+
+  def log_message(self, format, *args):
+    pass
+
+def start_health_server():
+  try:
+    with socketserver.TCPServer(("", 8080), HealthCheckHandler) as server:
+      server.serve_forever()
+  except Exception as e:
+    print("[PORT SERVER ERROR]", e)
+
+threading.Thread(target=start_health_server, daemon=True).start()
+# -------------------------------------------------------------------
 
 API_URL = "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json"
 BOT_TOKEN = "8662159068:AAGzjW3kf6ZPGft8SgfOje6s0APG4RL3WzU"
@@ -33,7 +56,6 @@ bot_state = {
     "scheduled_target": 0,
 }
 
-last_active_round = None
 previous_prediction = None
 previous_lucky_nums = []
 target_issue = None
@@ -124,7 +146,6 @@ def fetch_live_data():
   except Exception as e:
     print("[API FAIL]", e)
 
-  # Clock-based fallback issue generator
   now_dt = datetime.datetime.utcnow() + datetime.timedelta(hours=5, minutes=30)
   minute_idx = now_dt.hour * 60 + now_dt.minute
   pseudo_issue = int(now_dt.strftime("%Y%m%d") + str(minute_idx).zfill(4))
@@ -202,7 +223,7 @@ def send_session_closed_summary():
 
 
 def start_bot_session(target):
-  global target_issue, last_active_round
+  global target_issue
   bot_state["is_active"] = True
   bot_state["target_wins"] = target
   bot_state["total_predictions"] = 0
@@ -217,7 +238,6 @@ def start_bot_session(target):
   time.sleep(1)
 
   curr_iss, _ = fetch_live_data()
-  last_active_round = curr_iss
   target_issue = curr_iss + 1
   broadcast_prediction(target_issue)
 
@@ -265,8 +285,7 @@ def telegram_listener():
               int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
           )
           send_telegram(
-              f"✅ Bot started with {target if target>0 else '24/7'} wins"
-              " target!",
+              f"✅ Bot started with {target if target>0 else '24/7'} wins target!",
               chat_id,
           )
           start_bot_session(target)
@@ -282,8 +301,7 @@ def telegram_listener():
             bot_state["scheduled_target"] = target
             bot_state["is_active"] = False
             send_telegram(
-                f"⏰ *SCHEDULE SET!*\nBot will start at *{time_part} IST* with"
-                f" target *{target if target>0 else '24/7'} wins*.",
+                f"⏰ *SCHEDULE SET!*\nBot will start at *{time_part} IST* with target *{target if target>0 else '24/7'} wins*.",
                 chat_id,
             )
 
@@ -298,7 +316,7 @@ def telegram_listener():
 
 threading.Thread(target=telegram_listener, daemon=True).start()
 
-# Main Prediction Loop (Synced with 60-second draw cycles)
+# Continuous Round Execution Loop
 while True:
   try:
     # Schedule Handler
@@ -359,14 +377,12 @@ while True:
         )
         send_telegram(result_card)
 
-        # Check target reach
         if (
             bot_state["target_wins"] > 0
             and bot_state["total_wins"] >= bot_state["target_wins"]
         ):
           stop_bot_session()
         else:
-          # Dispatch next round prediction immediately
           target_issue = curr_issue + 1
           time.sleep(1)
           broadcast_prediction(target_issue)
@@ -375,4 +391,4 @@ while True:
     print("[CYCLE EXP]", e)
 
   time.sleep(5)
-    
+              
