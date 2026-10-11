@@ -35,12 +35,15 @@ BOT_TOKEN = "8662159068:AAGzjW3kf6ZPGft8SgfOje6s0APG4RL3WzU"
 CHAT_ID = "-1004446531098"
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
+        " like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ),
     "Accept": "application/json, text/plain, */*",
 }
 
 FIXED_DIVIDEND = 2738
-SECRET_KEY = "777"  # Unga secret code
+SECRET_KEY = "777"
 
 bot_state = {
     "is_active": False,
@@ -60,6 +63,7 @@ current_predicted_hot_nums = []
 published_predictions = set()
 evaluated_periods = set()
 recent_numbers_cache = [7, 3, 8, 1, 9, 4]
+dispatch_lock = threading.Lock()
 
 def send_telegram(text, target_chat=CHAT_ID):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -139,40 +143,41 @@ def fetch_live_data():
 
 def emit_prediction_card(target_iss):
     global current_target_period, current_predicted_size, current_predicted_hot_nums
-    if target_iss in published_predictions:
-        return
+    with dispatch_lock:
+        if target_iss in published_predictions:
+            return
+        published_predictions.add(target_iss)
 
-    pred, chosen_digit, count, dec_str, lucky_nums, reason = calculate_prediction(recent_numbers_cache)
-    current_target_period = target_iss
-    current_predicted_size = pred
-    current_predicted_hot_nums = lucky_nums
-    published_predictions.add(target_iss)
-    bot_state["total_predictions"] += 1
+        pred, chosen_digit, count, dec_str, lucky_nums, reason = calculate_prediction(recent_numbers_cache)
+        current_target_period = target_iss
+        current_predicted_size = pred
+        current_predicted_hot_nums = lucky_nums
+        bot_state["total_predictions"] += 1
 
-    if bot_state["current_level"] > bot_state["max_level"]:
-        bot_state["max_level"] = bot_state["current_level"]
+        if bot_state["current_level"] > bot_state["max_level"]:
+            bot_state["max_level"] = bot_state["current_level"]
 
-    pred_display = "🟢 *BIG [ 5 - 9 ]*" if pred == "BIG" else "🔴 *SMALL [ 0 - 4 ]*"
-    win_progress = f"  🏁 *WIN PROGRESS* : *{bot_state['total_wins']}/{bot_state['target_wins']}*\n" if bot_state['target_wins'] > 0 else ""
+        pred_display = "🟢 *BIG [ 5 - 9 ]*" if pred == "BIG" else "🔴 *SMALL [ 0 - 4 ]*"
+        win_progress = f"  🏁 *WIN PROGRESS* : *{bot_state['total_wins']}/{bot_state['target_wins']}*\n" if bot_state['target_wins'] > 0 else ""
 
-    signal_msg = (
-        f"┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
-        f"   👑 *CTG GAMING PREDICTION* 👑\n"
-        f"┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
-        f"  🎮 *SERVER* : *WINGO 1 MIN [VIP]*\n"
-        f"  🎯 *TARGET ISSUE* : `#{str(target_iss)[-4:]}`\n\n"
-        f"  🔮 *PREDICTION* : {pred_display}\n"
-        f"  🎲 *HOT NUMBERS* : `{lucky_nums[0]}` *&* `{lucky_nums[1]}`\n\n"
-        f"  📊 *CHOSEN DIGIT* : `{chosen_digit}` *(Repeated {count}x - {reason})*\n"
-        f"  🔢 *DECIMAL (20D)* : `0.{dec_str[:10]}...{dec_str[-2:]}`\n\n"
-        f"  ⚡ *CURRENT LEVEL  : {bot_state['current_level']}*\n"
-        f"  🔥 *MAX LEVEL REACHED : {bot_state['max_level']}*\n"
-        f"{win_progress}"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"  📩 *OFFICIAL HELP* : *@Gara00077*\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    )
-    send_telegram(signal_msg)
+        signal_msg = (
+            f"┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
+            f"   👑 *CTG GAMING PREDICTION* 👑\n"
+            f"┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
+            f"  🎮 *SERVER* : *WINGO 1 MIN [VIP]*\n"
+            f"  🎯 *TARGET ISSUE* : `#{str(target_iss)[-4:]}`\n\n"
+            f"  🔮 *PREDICTION* : {pred_display}\n"
+            f"  🎲 *HOT NUMBERS* : `{lucky_nums[0]}` *&* `{lucky_nums[1]}`\n\n"
+            f"  📊 *CHOSEN DIGIT* : `{chosen_digit}` *(Repeated {count}x - {reason})*\n"
+            f"  🔢 *DECIMAL (20D)* : `0.{dec_str[:10]}...{dec_str[-2:]}`\n\n"
+            f"  ⚡ *CURRENT LEVEL  : {bot_state['current_level']}*\n"
+            f"  🔥 *MAX LEVEL REACHED : {bot_state['max_level']}*\n"
+            f"{win_progress}"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"  📩 *OFFICIAL HELP* : *@Gara00077*\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        )
+        send_telegram(signal_msg)
 
 def send_session_closed_summary():
     msg_1 = (
@@ -199,6 +204,8 @@ def send_session_closed_summary():
     send_telegram(msg_2)
 
 def start_bot_session(target):
+    if bot_state["is_active"]:
+        return
     bot_state["is_active"] = True
     bot_state["target_wins"] = target
     bot_state["total_predictions"] = 0
@@ -249,16 +256,17 @@ def telegram_listener():
                 parts = msg.split()
                 cmd = parts[0].lower()
 
-                # /start 777 [target]
                 if cmd in ["/start", "start"]:
                     if len(parts) >= 2 and parts[1] == SECRET_KEY:
                         target = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0
-                        send_telegram(f"✅ Bot started with {target if target>0 else '24/7'} wins target!", chat_id)
-                        start_bot_session(target)
+                        if not bot_state["is_active"]:
+                            send_telegram(f"✅ Bot started with {target if target>0 else '24/7'} wins target!", chat_id)
+                            start_bot_session(target)
+                        else:
+                            send_telegram("⚠️ Session already in progress!", chat_id)
                     else:
                         send_telegram("🔒 Access Denied! Please provide valid secret code.", chat_id)
 
-                # /stop 777
                 elif cmd in ["/stop", "stop"]:
                     if len(parts) >= 2 and parts[1] == SECRET_KEY:
                         stop_bot_session()
@@ -266,7 +274,6 @@ def telegram_listener():
                     else:
                         send_telegram("🔒 Invalid Code!", chat_id)
 
-                # /schedule 777 HH:MM [target]
                 elif cmd in ["/schedule", "schedule"]:
                     if len(parts) >= 3 and parts[1] == SECRET_KEY:
                         time_part = parts[2]
@@ -350,4 +357,4 @@ while True:
         print("[CYCLE EXP]", e)
 
     time.sleep(5)
-                  
+        
