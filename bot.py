@@ -3,7 +3,6 @@ import http.server
 import socketserver
 import threading
 import time
-from collections import Counter
 from decimal import Decimal, getcontext
 import requests
 
@@ -15,15 +14,17 @@ class HealthHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write(b"CTG Gaming Prediction Bot is Running 24/7!")
+        self.wfile.write(b"CTG Gaming Prediction Bot Running 24/7!")
 
     def log_message(self, format, *args):
         pass
 
 def run_web_server():
-    port = 8080
-    with socketserver.TCPServer(("", port), HealthHandler) as httpd:
-        httpd.serve_forever()
+    try:
+        with socketserver.TCPServer(("", 8080), HealthHandler) as httpd:
+            httpd.serve_forever()
+    except Exception as e:
+        print("Web server error:", e)
 
 threading.Thread(target=run_web_server, daemon=True).start()
 # --------------------------------------------------------------------
@@ -40,7 +41,6 @@ HEADERS = {
 
 FIXED_DIVIDEND = 2738
 
-# Bot Control State
 bot_state = {
     "is_active": False,
     "target_wins": 0,
@@ -58,9 +58,9 @@ previous_prediction = None
 previous_lucky_nums = []
 target_issue = None
 
-def send_telegram(text):
+def send_telegram(text, target_chat=CHAT_ID):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "Markdown"}
+    payload = {"chat_id": target_chat, "text": text, "parse_mode": "Markdown"}
     try:
         requests.post(url, json=payload, timeout=10)
     except Exception as e:
@@ -158,45 +158,53 @@ def stop_bot_session():
         send_session_closed_summary()
     else:
         bot_state["scheduled_time"] = None
-        send_telegram("🛑 *Bot is currently idle and schedule cleared.*")
 
-# Telegram Command Listener
 def telegram_listener():
     last_update_id = 0
+    # Clear backlog old messages first
+    try:
+        init_res = requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset=-1", timeout=10).json()
+        results = init_res.get("result", [])
+        if results:
+            last_update_id = results[-1]["update_id"]
+    except Exception:
+        pass
+
     while True:
         try:
             url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-            params = {"offset": last_update_id + 1, "timeout": 20}
-            resp = requests.get(url, params=params, timeout=25).json()
+            params = {"offset": last_update_id + 1, "timeout": 15}
+            resp = requests.get(url, params=params, timeout=20).json()
             
             for update in resp.get("result", []):
                 last_update_id = update["update_id"]
-                msg = update.get("message", {}).get("text", "").strip()
+                msg_obj = update.get("message", {})
+                chat_id = msg_obj.get("chat", {}).get("id")
+                msg = msg_obj.get("text", "").strip()
                 if not msg:
                     continue
                 
                 parts = msg.split()
                 cmd = parts[0].lower()
                 
-                # /start [target] -> e.g. /start 10 or /start 20 or /start 0
                 if cmd in ["/start", "start"]:
                     target = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
                     start_bot_session(target)
+                    send_telegram(f"✅ Bot started with {target if target>0 else '24/7'} wins target!", chat_id)
 
-                # /schedule HH:MM target -> e.g. /schedule 20:30 10 (24-hour format)
                 elif cmd in ["/schedule", "schedule"]:
                     if len(parts) >= 2:
-                        time_part = parts[1] # "20:30"
+                        time_part = parts[1]
                         h, m = map(int, time_part.split(":"))
                         target = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0
                         bot_state["scheduled_time"] = (h, m)
                         bot_state["scheduled_target"] = target
                         bot_state["is_active"] = False
-                        send_telegram(f"⏰ *SCHEDULE SET!*\nBot will start at *{time_part} IST* with target *{target if target>0 else '24/7'} wins*.")
+                        send_telegram(f"⏰ *SCHEDULE SET!*\nBot will start at *{time_part} IST* with target *{target if target>0 else '24/7'} wins*.", chat_id)
 
-                # /stop
                 elif cmd in ["/stop", "stop"]:
                     stop_bot_session()
+                    send_telegram("🛑 *Bot Stopped Successfully!*", chat_id)
 
         except Exception as e:
             time.sleep(2)
@@ -207,16 +215,13 @@ threading.Thread(target=telegram_listener, daemon=True).start()
 # Main Prediction Loop
 while True:
     try:
-        # Check Schedule trigger
         if not bot_state["is_active"] and bot_state["scheduled_time"]:
-            # Current IST time (UTC + 5:30)
             now_utc = datetime.datetime.utcnow()
             now_ist = now_utc + datetime.timedelta(hours=5, minutes=30)
             sh, sm = bot_state["scheduled_time"]
             if now_ist.hour == sh and now_ist.minute == sm:
                 start_bot_session(bot_state["scheduled_target"])
 
-        # If bot is active, process game results
         if bot_state["is_active"]:
             resp = requests.get(API_URL, params={"pageNo": 1, "pageSize": 10}, headers=HEADERS, timeout=10).json()
             data_list = resp.get("data", {}).get("list", []) or resp.get("list", [])
@@ -244,7 +249,7 @@ while True:
 
                             cleared = bot_state["current_level"]
                             bot_state["current_level"] = 1
-                            level_desc = f"✨ *CLEARED AT LEVEL : {cleared}*"
+                            level_desc = f"✨ *CLEARED AT LEVEL : {level_cleared}*"
                         else:
                             status_badge = "💀 *✦ L O S S ✦* 💀"
                             status_tag = "❌ *FAILED*"
@@ -270,7 +275,6 @@ while True:
                         )
                         send_telegram(result_card)
 
-                        # Check if target reached
                         if bot_state["target_wins"] > 0 and bot_state["total_wins"] >= bot_state["target_wins"]:
                             stop_bot_session()
 
@@ -312,4 +316,3 @@ while True:
         print("Loop Error:", e)
 
     time.sleep(5)
-    
