@@ -8,7 +8,7 @@ import requests
 
 getcontext().prec = 50
 
-# ----------------- BACK4APP WEB SERVER -----------------
+# ----------------- HEALTH CHECK SERVER -----------------
 class HealthHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -56,7 +56,7 @@ last_processed_issue = None
 previous_prediction = None
 previous_lucky_nums = []
 target_issue = None
-is_starting_lock = False
+last_sent_prediction_issue = None
 
 def send_telegram(text, target_chat=CHAT_ID):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -125,7 +125,12 @@ def fetch_history_data():
     return None
 
 def broadcast_prediction(target_iss, history_list):
-    global previous_prediction, previous_lucky_nums
+    global previous_prediction, previous_lucky_nums, last_sent_prediction_issue
+    
+    if last_sent_prediction_issue == target_iss:
+        return
+    last_sent_prediction_issue = target_iss
+
     pred, chosen_digit, count, dec_str, lucky_nums, reason = calculate_prediction(history_list)
     previous_prediction = pred
     previous_lucky_nums = lucky_nums
@@ -157,10 +162,9 @@ def broadcast_prediction(target_iss, history_list):
     send_telegram(signal_msg)
 
 def start_bot_session(target):
-    global target_issue, last_processed_issue, is_starting_lock
-    if bot_state["is_active"] or is_starting_lock:
+    global target_issue, last_processed_issue
+    if bot_state["is_active"]:
         return
-    is_starting_lock = True
     bot_state["is_active"] = True
     bot_state["target_wins"] = target
     bot_state["total_predictions"] = 0
@@ -172,9 +176,9 @@ def start_bot_session(target):
     
     mode = f"{target} WINS TARGET" if target > 0 else "UNLIMITED 24/7"
     send_telegram(f"🚀 *CTG BOT STARTED!*\n🎯 Mode: *{mode}*")
-    time.sleep(2)
+    time.sleep(1)
 
-    # Force initial prediction on startup
+    # Trigger first signal right away
     data_list = fetch_history_data()
     if data_list and len(data_list) >= 6:
         latest = data_list[0]
@@ -182,7 +186,6 @@ def start_bot_session(target):
         last_processed_issue = curr_issue
         target_issue = curr_issue + 1
         broadcast_prediction(target_issue, data_list)
-    is_starting_lock = False
 
 def stop_bot_session():
     if bot_state["is_active"]:
@@ -242,7 +245,7 @@ def telegram_listener():
                 if cmd in ["/start", "start"]:
                     target = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
                     if not bot_state["is_active"]:
-                        send_telegram(f"✅ Bot starting with {target if target>0 else '24/7'} wins target...", chat_id)
+                        send_telegram(f"✅ Bot started with {target if target>0 else '24/7'} wins target!", chat_id)
                         start_bot_session(target)
                     else:
                         send_telegram("⚠️ Session already running!", chat_id)
@@ -267,7 +270,7 @@ def telegram_listener():
 
 threading.Thread(target=telegram_listener, daemon=True).start()
 
-# Main Check Loop
+# Main Prediction Loop
 while True:
     try:
         if not bot_state["is_active"] and bot_state["scheduled_time"]:
@@ -343,4 +346,4 @@ while True:
         print("[LOOP ERROR]", e)
 
     time.sleep(4)
-                        
+    
