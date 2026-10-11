@@ -14,6 +14,7 @@
             --text-dark: #064e3b;
             --orange: #f97316;
             --orange-glow: rgba(249, 115, 22, 0.3);
+            --red: #ef4444;
         }
 
         * {
@@ -50,31 +51,31 @@
             gap: 14px;
         }
 
-        /* LOGIN */
+        /* LOGIN SCREEN */
         .login-card {
             margin: auto 0;
             background: #ffffff;
-            padding: 28px 20px;
+            padding: 30px 20px;
             border-radius: 24px;
             border: 2px solid var(--card-border);
             text-align: center;
         }
         .login-logo {
-            width: 76px;
-            height: 76px;
+            width: 80px;
+            height: 80px;
             background: linear-gradient(135deg, var(--primary), #047857);
-            border-radius: 22px;
-            margin: 0 auto 16px;
+            border-radius: 24px;
+            margin: 0 auto 18px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 900;
-            box-shadow: 0 8px 18px var(--primary-glow);
+            box-shadow: 0 8px 20px var(--primary-glow);
         }
         .login-title {
-            font-size: 1.45rem;
+            font-size: 1.5rem;
             font-weight: 900;
             color: var(--text-dark);
         }
@@ -82,40 +83,40 @@
             font-size: 0.85rem;
             color: #047857;
             margin-top: 4px;
-            margin-bottom: 22px;
-            font-weight: 600;
+            margin-bottom: 24px;
+            font-weight: 700;
         }
         .key-input {
             width: 100%;
-            padding: 14px 16px;
-            border-radius: 14px;
+            padding: 16px;
+            border-radius: 16px;
             border: 2px solid var(--card-border);
-            font-size: 1.05rem;
+            font-size: 1.15rem;
             text-align: center;
             font-family: 'JetBrains Mono', monospace;
             font-weight: 800;
             outline: none;
             text-transform: uppercase;
-            margin-bottom: 14px;
+            letter-spacing: 2px;
+            transition: all 0.2s ease;
         }
         .key-input:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 4px var(--primary-glow);
         }
-        .btn-main {
-            width: 100%;
-            background: linear-gradient(135deg, var(--primary), #059669);
-            color: white;
-            padding: 14px;
-            border-radius: 14px;
-            border: none;
-            font-size: 1rem;
-            font-weight: 900;
-            cursor: pointer;
-            box-shadow: 0 8px 18px var(--primary-glow);
+        .auth-status-box {
+            margin-top: 14px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            min-height: 22px;
+            transition: all 0.2s ease;
         }
+        .status-idle { color: #64748b; }
+        .status-ok { color: var(--primary); }
+        .status-err { color: var(--red); }
+
         .contact-admin {
-            margin-top: 18px;
+            margin-top: 24px;
             font-size: 0.85rem;
             color: #64748b;
         }
@@ -427,15 +428,18 @@
 
 <div class="phone-wrapper">
 
-    <!-- 1. LOGIN SCREEN -->
+    <!-- 1. LOGIN SCREEN (ZERO BUTTON - AUTO VALIDATION) -->
     <div id="loginView" style="display:flex; flex-direction:column; gap:14px;">
         <div class="login-card">
             <div class="login-logo">AK</div>
             <h1 class="login-title">AKAZA VIP SYSTEM</h1>
-            <p class="login-sub">Enter Access License Key to unlock predictions</p>
+            <p class="login-sub">Type Key to unlock (Auto-Verifies instantly)</p>
             
-            <input type="text" id="accessKeyInput" class="key-input" placeholder="ENTER ACCESS KEY">
-            <button class="btn-main" onclick="verifyKeyLogin()">UNLOCK DASHBOARD ➔</button>
+            <input type="text" id="accessKeyInput" class="key-input" placeholder="TYPE KEY HERE" autofocus oninput="autoCheckKey(this.value)">
+            
+            <div id="authStatus" class="auth-status-box status-idle">
+                Waiting for input...
+            </div>
 
             <div class="contact-admin">
                 Need VIP Key? Contact Admin <br>
@@ -572,29 +576,29 @@
         userKeys = {};
     }
 
-    function verifyKeyLogin() {
-        const raw = document.getElementById("accessKeyInput").value || "";
-        const key = raw.replace(/\s+/g, '').toUpperCase();
-        
+    // AUTO VALIDATOR ON INPUT
+    function autoCheckKey(val) {
+        const key = (val || "").replace(/\s+/g, '').toUpperCase();
+        const statusBox = document.getElementById("authStatus");
+
         if (!key) {
-            alert("Please enter a key!");
+            statusBox.className = "auth-status-box status-idle";
+            statusBox.innerText = "Waiting for input...";
             return;
         }
 
-        // 1. Admin Master Gateway
-        if (key === "777" || key === "ADMIN777" || key === "ADMIN") {
-            document.getElementById("loginView").style.display = "none";
-            document.getElementById("dashboardView").style.display = "none";
-            document.getElementById("adminView").style.display = "flex";
-            renderAdminKeys();
+        // Master Admin: 777 or ADMIN
+        if (key === "777" || key === "ADMIN" || key === "ADMIN777") {
+            statusBox.className = "auth-status-box status-ok";
+            statusBox.innerText = "✓ ADMIN VERIFIED! OPENING...";
+            setTimeout(() => {
+                document.getElementById("loginView").style.display = "none";
+                document.getElementById("dashboardView").style.display = "none";
+                document.getElementById("adminView").style.display = "flex";
+                renderAdminKeys();
+            }, 400);
             return;
         }
 
-        // 2. VIP User Gateway (AKAZA100, VIP, AKAZA, or Generated Keys)
-        if (key === "AKAZA100" || key === "VIP" || key === "AKAZA" || (userKeys[key] && Date.now() < userKeys[key].expiry)) {
-            document.getElementById("loginView").style.display = "none";
-            document.getElementById("adminView").style.display = "none";
-            document.getElementById("dashboardView").style.display = "flex";
-            syncPrediction();
-            return;
-   
+        // VIP User: AKAZA100 or VIP
+      
