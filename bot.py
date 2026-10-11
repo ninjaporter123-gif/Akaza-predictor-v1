@@ -49,7 +49,7 @@ bot_state = {
     "total_num_wins": 0,
     "current_level": 1,
     "max_level": 1,
-    "scheduled_time": None, # (hour, minute)
+    "scheduled_time": None,
     "scheduled_target": 0
 }
 
@@ -139,7 +139,49 @@ def send_session_closed_summary():
     )
     send_telegram(msg_2)
 
+def emit_initial_prediction():
+    global target_issue, previous_prediction, previous_lucky_nums, last_processed_issue
+    try:
+        resp = requests.get(API_URL, params={"pageNo": 1, "pageSize": 10}, headers=HEADERS, timeout=10).json()
+        data_list = resp.get("data", {}).get("list", []) or resp.get("list", [])
+        if data_list and len(data_list) >= 6:
+            latest = data_list[0]
+            current_issue = int(latest.get("issueNumber") or latest.get("period"))
+            last_processed_issue = current_issue
+            target_issue = current_issue + 1
+
+            pred, chosen_digit, count, dec_str, lucky_nums, reason = calculate_prediction(data_list)
+            previous_prediction = pred
+            previous_lucky_nums = lucky_nums
+            bot_state["total_predictions"] += 1
+
+            pred_display = "🟢 *BIG [ 5 - 9 ]*" if pred == "BIG" else "🔴 *SMALL [ 0 - 4 ]*"
+            win_progress = f"  🏁 *WIN PROGRESS* : *{bot_state['total_wins']}/{bot_state['target_wins']}*\n" if bot_state['target_wins'] > 0 else ""
+
+            signal_msg = (
+                f"┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
+                f"   👑 *CTG GAMING PREDICTION* 👑\n"
+                f"┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
+                f"  🎮 *SERVER* : *WINGO 1 MIN [VIP]*\n"
+                f"  🎯 *TARGET ISSUE* : `#{str(target_issue)[-4:]}`\n\n"
+                f"  🔮 *PREDICTION* : {pred_display}\n"
+                f"  🎲 *HOT NUMBERS* : `{lucky_nums[0]}` *&* `{lucky_nums[1]}`\n\n"
+                f"  📊 *CHOSEN DIGIT* : `{chosen_digit}` *(Repeated {count}x - {reason})*\n"
+                f"  🔢 *DECIMAL (20D)* : `0.{dec_str[:10]}...{dec_str[-2:]}`\n\n"
+                f"  ⚡ *CURRENT LEVEL  : {bot_state['current_level']}*\n"
+                f"  🔥 *MAX LEVEL REACHED : {bot_state['max_level']}*\n"
+                f"{win_progress}"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"  📩 *OFFICIAL HELP* : *@Gara00077*\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            )
+            send_telegram(signal_msg)
+    except Exception as e:
+        print("Initial pred error:", e)
+
 def start_bot_session(target):
+    if bot_state["is_active"]:
+        return
     bot_state["is_active"] = True
     bot_state["target_wins"] = target
     bot_state["total_predictions"] = 0
@@ -151,6 +193,8 @@ def start_bot_session(target):
     
     mode = f"{target} WINS TARGET" if target > 0 else "UNLIMITED 24/7"
     send_telegram(f"🚀 *CTG BOT STARTED!*\n🎯 Mode: *{mode}*")
+    time.sleep(1)
+    emit_initial_prediction()
 
 def stop_bot_session():
     if bot_state["is_active"]:
@@ -161,7 +205,6 @@ def stop_bot_session():
 
 def telegram_listener():
     last_update_id = 0
-    # Clear backlog old messages first
     try:
         init_res = requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset=-1", timeout=10).json()
         results = init_res.get("result", [])
@@ -173,15 +216,18 @@ def telegram_listener():
     while True:
         try:
             url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-            params = {"offset": last_update_id + 1, "timeout": 15}
-            resp = requests.get(url, params=params, timeout=20).json()
+            params = {"offset": last_update_id + 1, "timeout": 20}
+            resp = requests.get(url, params=params, timeout=25).json()
             
             for update in resp.get("result", []):
                 last_update_id = update["update_id"]
                 msg_obj = update.get("message", {})
-                chat_id = msg_obj.get("chat", {}).get("id")
+                chat_id = str(msg_obj.get("chat", {}).get("id"))
                 msg = msg_obj.get("text", "").strip()
                 if not msg:
+                    continue
+
+                if chat_id == CHAT_ID:
                     continue
                 
                 parts = msg.split()
@@ -249,7 +295,7 @@ while True:
 
                             cleared = bot_state["current_level"]
                             bot_state["current_level"] = 1
-                            level_desc = f"✨ *CLEARED AT LEVEL : {level_cleared}*"
+                            level_desc = f"✨ *CLEARED AT LEVEL : {cleared}*"
                         else:
                             status_badge = "💀 *✦ L O S S ✦* 💀"
                             status_tag = "❌ *FAILED*"
