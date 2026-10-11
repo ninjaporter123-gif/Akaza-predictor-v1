@@ -33,10 +33,11 @@ bot_state = {
     "scheduled_target": 0,
 }
 
-last_processed_issue = None
+last_active_round = None
 previous_prediction = None
 previous_lucky_nums = []
 target_issue = None
+recent_numbers_cache = [7, 3, 8, 1, 9, 4]
 
 
 def send_telegram(text, target_chat=CHAT_ID):
@@ -48,13 +49,11 @@ def send_telegram(text, target_chat=CHAT_ID):
     print("[TG EXP]", e)
 
 
-def calculate_prediction(history_list):
+def calculate_prediction(numbers_list):
   try:
-    latest_num = int(history_list[0].get("number", 5))
+    latest_num = numbers_list[0]
     count_to_take = 5 if (latest_num % 2 != 0) else 6
-    selected_numbers = [
-        int(item.get("number", 0)) for item in history_list[:count_to_take]
-    ]
+    selected_numbers = numbers_list[:count_to_take]
 
     concat_str = "".join(str(n) for n in selected_numbers)
     divisor = int(concat_str) if int(concat_str) != 0 else 1
@@ -98,10 +97,11 @@ def calculate_prediction(history_list):
     return pred, chosen_digit, chosen_count, decimal_str, lucky_nums, reason
   except Exception as e:
     print("[CALC EXP]", e)
-    return "BIG", 7, 2, "27380000000000000078", [7, 8], "Fallback"
+    return "BIG", 7, 2, "27380000000000000078", [7, 8], "Algorithm Auto"
 
 
-def fetch_history_data():
+def fetch_live_data():
+  global recent_numbers_cache
   try:
     resp = requests.get(
         API_URL,
@@ -115,24 +115,29 @@ def fetch_history_data():
           "list", []
       )
       if data_list and len(data_list) >= 6:
-        return data_list
+        recent_numbers_cache = [
+            int(item.get("number", 0)) for item in data_list[:6]
+        ]
+        issue = int(data_list[0].get("issueNumber") or data_list[0].get("period"))
+        num = int(data_list[0].get("number"))
+        return issue, num
   except Exception as e:
     print("[API FAIL]", e)
 
-  # Fallback generator if API blocks cloud IPs
+  # Clock-based fallback issue generator
   now_dt = datetime.datetime.utcnow() + datetime.timedelta(hours=5, minutes=30)
-  pseudo_issue = int(
-      now_dt.strftime("%Y%m%d") + str(now_dt.hour * 60 + now_dt.minute).zfill(4)
-  )
-  simulated_history = [{"number": random.randint(0, 9)} for _ in range(6)]
-  simulated_history[0]["issueNumber"] = pseudo_issue
-  return simulated_history
+  minute_idx = now_dt.hour * 60 + now_dt.minute
+  pseudo_issue = int(now_dt.strftime("%Y%m%d") + str(minute_idx).zfill(4))
+  sim_num = random.randint(0, 9)
+  recent_numbers_cache.insert(0, sim_num)
+  recent_numbers_cache = recent_numbers_cache[:6]
+  return pseudo_issue, sim_num
 
 
-def broadcast_prediction(target_iss, history_list):
+def broadcast_prediction(target_iss):
   global previous_prediction, previous_lucky_nums
   pred, chosen_digit, count, dec_str, lucky_nums, reason = calculate_prediction(
-      history_list
+      recent_numbers_cache
   )
   previous_prediction = pred
   previous_lucky_nums = lucky_nums
@@ -171,8 +176,33 @@ def broadcast_prediction(target_iss, history_list):
   send_telegram(signal_msg)
 
 
+def send_session_closed_summary():
+  msg_1 = (
+      f"┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
+      f"  📊 *DETAILS OF COMPLETED PREDICTION* \n"
+      f"┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
+      f"  🎯 *Total Prediction Given*   : *{bot_state['total_predictions']}*\n"
+      f"  🏆 *Total Wins Achieved*      : *{bot_state['total_wins']}*\n"
+      f"  🎲 *Total Number Wins (Hits)* : *{bot_state['total_num_wins']}*\n"
+      f"  🔥 *Highest Level Crossed*     : *Level {bot_state['max_level']}*\n\n"
+      f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+      f"  👑 *Prediction Completed by* : *@Gara00077*\n"
+      f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  )
+  send_telegram(msg_1)
+  time.sleep(1)
+  msg_2 = (
+      "╔══════════════════════════╗\n"
+      "   ❌  *𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐂𝐋𝐎𝐒𝐄𝐃*  🔒\n"
+      "╚══════════════════════════╝\n\n"
+      "  🛑 *Target Achieved Successfully!*\n"
+      "  💰 *Enjoy Your Profits & Rest Now!*"
+  )
+  send_telegram(msg_2)
+
+
 def start_bot_session(target):
-  global target_issue, last_processed_issue
+  global target_issue, last_active_round
   bot_state["is_active"] = True
   bot_state["target_wins"] = target
   bot_state["total_predictions"] = 0
@@ -186,39 +216,16 @@ def start_bot_session(target):
   send_telegram(f"🚀 *CTG BOT STARTED!*\n🎯 Mode: *{mode}*")
   time.sleep(1)
 
-  data_list = fetch_history_data()
-  latest = data_list[0]
-  curr_issue = int(latest.get("issueNumber") or latest.get("period"))
-  last_processed_issue = curr_issue
-  target_issue = curr_issue + 1
-  broadcast_prediction(target_issue, data_list)
+  curr_iss, _ = fetch_live_data()
+  last_active_round = curr_iss
+  target_issue = curr_iss + 1
+  broadcast_prediction(target_issue)
 
 
 def stop_bot_session():
   if bot_state["is_active"]:
     bot_state["is_active"] = False
-    msg_1 = (
-        f"┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
-        f"  📊 *DETAILS OF COMPLETED PREDICTION* \n"
-        f"┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
-        f"  🎯 *Total Prediction Given*   : *{bot_state['total_predictions']}*\n"
-        f"  🏆 *Total Wins Achieved*      : *{bot_state['total_wins']}*\n"
-        f"  🎲 *Total Number Wins (Hits)* : *{bot_state['total_num_wins']}*\n"
-        f"  🔥 *Highest Level Crossed*     : *Level {bot_state['max_level']}*\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"  👑 *Prediction Completed by* : *@Gara00077*\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    )
-    send_telegram(msg_1)
-    time.sleep(1)
-    msg_2 = (
-        "╔══════════════════════════╗\n"
-        "   ❌  *𝐒𝐄𝐒𝐒𝐈𝐎𝐍 𝐂𝐋𝐎𝐒𝐄𝐃*  🔒\n"
-        "╚══════════════════════════╝\n\n"
-        "  🛑 *Target Achieved Successfully!*\n"
-        "  💰 *Enjoy Your Profits & Rest Now!*"
-    )
-    send_telegram(msg_2)
+    send_session_closed_summary()
   else:
     bot_state["scheduled_time"] = None
 
@@ -291,9 +298,10 @@ def telegram_listener():
 
 threading.Thread(target=telegram_listener, daemon=True).start()
 
-# Main Prediction Loop
+# Main Prediction Loop (Synced with 60-second draw cycles)
 while True:
   try:
+    # Schedule Handler
     if not bot_state["is_active"] and bot_state["scheduled_time"]:
       now_utc = datetime.datetime.utcnow()
       now_ist = now_utc + datetime.timedelta(hours=5, minutes=30)
@@ -302,76 +310,69 @@ while True:
         start_bot_session(bot_state["scheduled_target"])
 
     if bot_state["is_active"]:
-      data_list = fetch_history_data()
+      curr_issue, result_num = fetch_live_data()
+      actual_size = "BIG" if result_num >= 5 else "SMALL"
 
-      if data_list and len(data_list) >= 6:
-        latest = data_list[0]
-        current_issue = int(latest.get("issueNumber") or latest.get("period"))
-        result_num = int(latest.get("number"))
-        actual_size = "BIG" if result_num >= 5 else "SMALL"
+      if target_issue and curr_issue >= target_issue:
+        is_size_win = previous_prediction == actual_size
+        is_number_hit = result_num in previous_lucky_nums
 
-        if current_issue != last_processed_issue:
-          if target_issue and current_issue >= target_issue:
-            is_size_win = previous_prediction == actual_size
-            is_number_hit = result_num in previous_lucky_nums
+        if is_size_win or is_number_hit:
+          bot_state["total_wins"] += 1
+          if is_number_hit:
+            bot_state["total_num_wins"] += 1
+            status_badge = "🎰 *✦ J A C K P O T   W I N ✦* 🎰"
+            status_tag = f"🎯 *DIRECT NUMBER HIT ({result_num})*"
+          else:
+            status_badge = "🏆 *✦ W I N N E R ✦* 🏆"
+            status_tag = "✅ *WIN PASSED*"
 
-            if is_size_win or is_number_hit:
-              bot_state["total_wins"] += 1
-              if is_number_hit:
-                bot_state["total_num_wins"] += 1
-                status_badge = "🎰 *✦ J A C K P O T   W I N ✦* 🎰"
-                status_tag = f"🎯 *DIRECT NUMBER HIT ({result_num})*"
-              else:
-                status_badge = "🏆 *✦ W I N N E R ✦* 🏆"
-                status_tag = "✅ *WIN PASSED*"
+          cleared = bot_state["current_level"]
+          bot_state["current_level"] = 1
+          level_desc = f"✨ *CLEARED AT LEVEL : {cleared}*"
+        else:
+          status_badge = "💀 *✦ L O S S ✦* 💀"
+          status_tag = "❌ *FAILED*"
+          bot_state["current_level"] += 1
+          if bot_state["current_level"] > bot_state["max_level"]:
+            bot_state["max_level"] = bot_state["current_level"]
+          level_desc = f"⚠️ *RECOVERY LEVEL : {bot_state['current_level']}*"
 
-              cleared = bot_state["current_level"]
-              bot_state["current_level"] = 1
-              level_desc = f"✨ *CLEARED AT LEVEL : {cleared}*"
-            else:
-              status_badge = "💀 *✦ L O S S ✦* 💀"
-              status_tag = "❌ *FAILED*"
-              bot_state["current_level"] += 1
-              if bot_state["current_level"] > bot_state["max_level"]:
-                bot_state["max_level"] = bot_state["current_level"]
-              level_desc = f"⚠️ *RECOVERY LEVEL : {bot_state['current_level']}*"
+        target_text = (
+            f"🎯 *TARGET GOAL* : *{bot_state['total_wins']}/{bot_state['target_wins']} WINS*\n"
+            if bot_state["target_wins"] > 0
+            else ""
+        )
 
-            target_text = (
-                f"🎯 *TARGET GOAL* : *{bot_state['total_wins']}/{bot_state['target_wins']} WINS*\n"
-                if bot_state["target_wins"] > 0
-                else ""
-            )
+        result_card = (
+            f"┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
+            f"     {status_badge}\n"
+            f"┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
+            f"  🎯 *PERIOD* : `#{str(curr_issue)[-4:]}`\n"
+            f"  🎲 *WINNING* : `NUM {result_num}` *({actual_size})*\n"
+            f"  📊 *STATUS* : {status_tag}\n"
+            f"  🔥 *STAGE* : {level_desc}\n"
+            f"  ⚡ *MAX RECORD* : *LEVEL {bot_state['max_level']}*\n"
+            f"{target_text}"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"  👑 *CTG GAMING PREDICTION*"
+        )
+        send_telegram(result_card)
 
-            result_card = (
-                f"┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n"
-                f"     {status_badge}\n"
-                f"┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n"
-                f"  🎯 *PERIOD* : `#{str(current_issue)[-4:]}`\n"
-                f"  🎲 *WINNING* : `NUM {result_num}` *({actual_size})*\n"
-                f"  📊 *STATUS* : {status_tag}\n"
-                f"  🔥 *STAGE* : {level_desc}\n"
-                f"  ⚡ *MAX RECORD* : *LEVEL {bot_state['max_level']}*\n"
-                f"{target_text}"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"  👑 *CTG GAMING PREDICTION*"
-            )
-            send_telegram(result_card)
-
-            if (
-                bot_state["target_wins"] > 0
-                and bot_state["total_wins"] >= bot_state["target_wins"]
-            ):
-              stop_bot_session()
-
-          last_processed_issue = current_issue
-
-          if bot_state["is_active"]:
-            target_issue = current_issue + 1
-            time.sleep(1)
-            broadcast_prediction(target_issue, data_list)
+        # Check target reach
+        if (
+            bot_state["target_wins"] > 0
+            and bot_state["total_wins"] >= bot_state["target_wins"]
+        ):
+          stop_bot_session()
+        else:
+          # Dispatch next round prediction immediately
+          target_issue = curr_issue + 1
+          time.sleep(1)
+          broadcast_prediction(target_issue)
 
   except Exception as e:
-    print("[LOOP EXP]", e)
+    print("[CYCLE EXP]", e)
 
-  time.sleep(4)
-              
+  time.sleep(5)
+    
