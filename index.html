@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AKAZA VIP PREDICTOR</title>
+    <title>AKAZA SIGNAL WORKSPACE</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #10b981;
-            --primary-glow: rgba(16, 185, 129, 0.35);
-            --bg-base: #f0fdf4;
-            --card-border: #bbf7d0;
+            --primary-glow: rgba(16, 185, 129, 0.4);
+            --bg-outer: #050811;
+            --card-bg: #ffffff;
+            --card-border: #10b981;
             --text-dark: #064e3b;
             --orange: #f97316;
-            --orange-glow: rgba(249, 115, 22, 0.3);
-            --red: #ef4444;
+            --orange-glow: rgba(249, 115, 22, 0.35);
+            --bronze: linear-gradient(135deg, #a16207, #78350f);
+            --blue-btn: linear-gradient(135deg, #0284c7, #0369a1);
         }
 
         * {
@@ -26,107 +28,235 @@
         }
 
         body {
-            background-color: var(--bg-base);
-            color: var(--text-dark);
+            background-color: var(--bg-outer);
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
-            padding: 10px;
+            align-items: center;
+            padding: 12px;
         }
 
         .phone-wrapper {
             width: 100%;
-            max-width: 440px;
+            max-width: 420px;
             background: #ffffff;
-            border-radius: 28px;
+            border-radius: 36px;
             overflow: hidden;
-            border: 2px solid var(--card-border);
-            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
+            border: 3px solid #10b981;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.25);
             display: flex;
             flex-direction: column;
             position: relative;
-            min-height: 94vh;
-            padding: 16px;
+            padding: 24px 20px;
+        }
+
+        /* ------------------ VIEW 1: AUTHENTICATION SCREEN ------------------ */
+        #loginView {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
             gap: 14px;
         }
 
-        /* LOGIN SCREEN */
-        .login-card {
-            margin: auto 0;
-            background: #ffffff;
-            padding: 30px 20px;
-            border-radius: 24px;
-            border: 2px solid var(--card-border);
-            text-align: center;
+        .logo-wrap {
+            position: relative;
+            margin-top: 10px;
         }
-        .login-logo {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--primary), #047857);
-            border-radius: 24px;
-            margin: 0 auto 18px;
+        .squircle-logo {
+            width: 90px;
+            height: 90px;
+            border-radius: 28px;
+            background: linear-gradient(135deg, #4ade80, #ca8a04);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 2rem;
+            color: #ffffff;
+            font-size: 2.2rem;
             font-weight: 900;
-            box-shadow: 0 8px 20px var(--primary-glow);
+            box-shadow: 0 12px 28px rgba(34, 197, 94, 0.35);
+            border: 3px solid rgba(255, 255, 255, 0.8);
         }
-        .login-title {
-            font-size: 1.5rem;
-            font-weight: 900;
-            color: var(--text-dark);
-        }
-        .login-sub {
-            font-size: 0.85rem;
-            color: #047857;
+
+        .node-tag {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #059669;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
             margin-top: 4px;
-            margin-bottom: 24px;
-            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        .key-input {
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        .title-brand {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: #064e3b;
+            letter-spacing: 0.5px;
+        }
+        .title-brand span {
+            color: #ea580c;
+        }
+
+        .sub-brand {
+            font-size: 0.72rem;
+            color: #64748b;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: -8px;
+        }
+
+        .segmented-dots {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             width: 100%;
-            padding: 16px;
+            margin: 6px 0;
+        }
+        .dots-row {
+            display: flex;
+            gap: 4px;
+        }
+        .dash-bar {
+            width: 28px;
+            height: 4px;
+            background: #a7f3d0;
+            border-radius: 4px;
+        }
+        .dash-bar.active { background: #10b981; }
+        .control-label {
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: #64748b;
+            letter-spacing: 0.8px;
+        }
+
+        /* Tabs */
+        .tab-pill-box {
+            width: 100%;
+            background: #0f172a;
             border-radius: 16px;
-            border: 2px solid var(--card-border);
-            font-size: 1.15rem;
+            padding: 5px;
+            display: flex;
+            gap: 6px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 0;
+            border-radius: 12px;
+            border: none;
+            font-size: 0.78rem;
+            font-weight: 800;
+            cursor: pointer;
+            color: #64748b;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .tab-btn.active {
+            background: #1e3a47;
+            color: #38bdf8;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        /* Black Input Box */
+        .input-dark-field {
+            width: 100%;
+            background: #0b1120;
+            border: 2px solid #1e293b;
+            color: #38bdf8;
+            border-radius: 16px;
+            padding: 16px;
+            font-size: 1rem;
             text-align: center;
             font-family: 'JetBrains Mono', monospace;
             font-weight: 800;
-            outline: none;
-            text-transform: uppercase;
             letter-spacing: 2px;
-            transition: all 0.2s ease;
+            outline: none;
         }
-        .key-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px var(--primary-glow);
+        .input-dark-field:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.3);
         }
-        .auth-status-box {
-            margin-top: 14px;
-            font-size: 0.85rem;
-            font-weight: 800;
-            min-height: 22px;
-            transition: all 0.2s ease;
-        }
-        .status-idle { color: #64748b; }
-        .status-ok { color: var(--primary); }
-        .status-err { color: var(--red); }
 
-        .contact-admin {
-            margin-top: 24px;
-            font-size: 0.85rem;
-            color: #64748b;
+        /* Activate Button */
+        .btn-activate {
+            width: 100%;
+            background: linear-gradient(135deg, #a16207, #78350f);
+            color: #ffffff;
+            border: none;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(161, 98, 7, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        .contact-admin a {
-            color: var(--primary);
-            font-weight: 800;
+
+        /* Join TG Button */
+        .btn-telegram {
+            width: 100%;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #ffffff;
+            border: none;
+            padding: 15px;
+            border-radius: 16px;
+            font-size: 0.88rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(2, 132, 199, 0.3);
             text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
-        /* USER PREDICTION SCREEN */
+        /* Bottom Admin Console */
+        .admin-console-trigger {
+            margin-top: 10px;
+            padding: 8px;
+            font-size: 0.78rem;
+            font-weight: 900;
+            color: #64748b;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: color 0.2s;
+        }
+        .admin-console-trigger:hover {
+            color: #064e3b;
+        }
+
+        /* ------------------ VIEW 2: LIVE PREDICTION DASHBOARD ------------------ */
+        #dashboardView {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+        }
+
         .dash-header {
             display: flex;
             align-items: center;
@@ -134,7 +264,7 @@
             background: #ffffff;
             padding: 12px 16px;
             border-radius: 20px;
-            border: 1.5px solid var(--card-border);
+            border: 1.5px solid #bbf7d0;
         }
         .brand-meta {
             display: flex;
@@ -145,7 +275,7 @@
             width: 44px;
             height: 44px;
             border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), #059669);
+            background: linear-gradient(135deg, #10b981, #059669);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -160,14 +290,14 @@
         }
         .brand-titles p {
             font-size: 0.72rem;
-            color: var(--orange);
+            color: #f97316;
             font-weight: 800;
         }
         .timer-circle {
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            border: 3px solid var(--primary);
+            border: 3px solid #10b981;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -195,23 +325,12 @@
             background: #e6fcf5;
             padding: 6px 10px;
             border-radius: 12px;
-            border: 1px dashed var(--primary);
-        }
-
-        .promo-banner {
-            background: linear-gradient(135deg, var(--primary), #059669);
-            border-radius: 16px;
-            padding: 10px 14px;
-            text-align: center;
-            color: #ffffff;
-            font-size: 0.82rem;
-            font-weight: 800;
-            box-shadow: 0 4px 12px var(--primary-glow);
+            border: 1px dashed #10b981;
         }
 
         .signal-core {
             background: #ffffff;
-            border: 2px solid var(--card-border);
+            border: 2px solid #bbf7d0;
             border-radius: 24px;
             padding: 20px 16px;
             display: flex;
@@ -227,7 +346,7 @@
             align-items: center;
         }
         .pattern-tag {
-            background: var(--primary);
+            background: #10b981;
             color: #ffffff;
             padding: 4px 12px;
             border-radius: 10px;
@@ -237,26 +356,26 @@
         .acc-tag {
             background: #ecfdf5;
             color: #047857;
-            border: 1.5px solid var(--card-border);
+            border: 1.5px solid #bbf7d0;
             padding: 4px 12px;
             border-radius: 10px;
             font-size: 0.75rem;
             font-weight: 800;
         }
         .round-badge {
-            background: var(--orange);
+            background: #f97316;
             color: #fff;
             padding: 5px 18px;
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 800;
-            box-shadow: 0 4px 12px var(--orange-glow);
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
         }
         .orb-display {
             width: 160px;
             height: 160px;
             border-radius: 50%;
-            border: 4px dashed var(--primary);
+            border: 4px dashed #10b981;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -265,9 +384,9 @@
         .orb-inner {
             font-size: 2.8rem;
             font-weight: 900;
-            color: var(--orange);
+            color: #f97316;
             letter-spacing: 1px;
-            text-shadow: 0 4px 16px var(--orange-glow);
+            text-shadow: 0 4px 16px rgba(249, 115, 22, 0.35);
         }
 
         .picks-box {
@@ -281,7 +400,7 @@
         .picks-label {
             font-size: 0.75rem;
             font-weight: 800;
-            color: var(--orange);
+            color: #f97316;
             margin-bottom: 10px;
         }
         .numbers-cluster {
@@ -295,14 +414,14 @@
             height: 58px;
             border-radius: 50%;
             background: #ffffff;
-            border: 3px dashed var(--orange);
+            border: 3px dashed #f97316;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.8rem;
             font-weight: 900;
-            color: var(--orange);
-            box-shadow: 0 6px 14px var(--orange-glow);
+            color: #f97316;
+            box-shadow: 0 6px 14px rgba(249, 115, 22, 0.35);
             font-family: 'JetBrains Mono', monospace;
         }
         .pool-text {
@@ -315,34 +434,11 @@
             display: inline-block;
         }
 
-        .analytics-card {
-            background: #ffffff;
-            border: 1.5px solid var(--card-border);
-            border-radius: 18px;
-            padding: 12px 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .bar-wrap {
-            height: 8px;
-            background: #e2e8f0;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--orange));
-            border-radius: 10px;
-            width: 0%;
-            transition: width 0.4s ease;
-        }
-
         .bottom-nav {
-            margin-top: auto;
+            margin-top: 10px;
             background: #ffffff;
             border-radius: 20px;
-            border: 1.5px solid var(--card-border);
+            border: 1.5px solid #bbf7d0;
             display: flex;
             justify-content: space-around;
             padding: 8px 4px;
@@ -359,11 +455,16 @@
             border-radius: 12px;
         }
         .nav-item.active {
-            background: var(--primary);
+            background: #10b981;
             color: #ffffff;
         }
 
-        /* ADMIN */
+        /* ------------------ VIEW 3: MASTER ADMIN PANEL ------------------ */
+        #adminView {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+        }
         .admin-header {
             display: flex;
             justify-content: space-between;
@@ -394,18 +495,6 @@
             display: flex;
             justify-content: space-between;
         }
-        .color-palette {
-            display: flex;
-            gap: 10px;
-        }
-        .color-swatch {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-        }
         .key-list-box {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -428,28 +517,57 @@
 
 <div class="phone-wrapper">
 
-    <!-- 1. LOGIN SCREEN (ZERO BUTTON - AUTO VALIDATION) -->
-    <div id="loginView" style="display:flex; flex-direction:column; gap:14px;">
-        <div class="login-card">
-            <div class="login-logo">AK</div>
-            <h1 class="login-title">AKAZA VIP SYSTEM</h1>
-            <p class="login-sub">Type Key to unlock (Auto-Verifies instantly)</p>
-            
-            <input type="text" id="accessKeyInput" class="key-input" placeholder="TYPE KEY HERE" autofocus oninput="autoCheckKey(this.value)">
-            
-            <div id="authStatus" class="auth-status-box status-idle">
-                Waiting for input...
-            </div>
+    <!-- 1. LOGIN SCREEN -->
+    <div id="loginView">
+        <div class="logo-wrap">
+            <div class="squircle-logo">AK</div>
+        </div>
 
-            <div class="contact-admin">
-                Need VIP Key? Contact Admin <br>
-                <a href="https://t.me/Gara00077" target="_blank">@Gara00077</a>
+        <div class="node-tag">
+            <span class="dot"></span> PRIVATE NODE • SECURE ENTRY
+        </div>
+
+        <h1 class="title-brand">AKAZA <span>PREDICTOR</span></h1>
+        <p class="sub-brand">SIGNAL WORKSPACE • AUTHENTICATE TO CONTINUE</p>
+
+        <div class="segmented-dots">
+            <div class="dots-row">
+                <div class="dash-bar active"></div>
+                <div class="dash-bar active"></div>
+                <div class="dash-bar active"></div>
+                <div class="dash-bar"></div>
+                <div class="dash-bar"></div>
             </div>
+            <span class="control-label">LOCAL ACCESS CONTROL</span>
+        </div>
+
+        <!-- Mode Toggle Tabs -->
+        <div class="tab-pill-box">
+            <button id="tabPassword" class="tab-btn" onclick="setMode('pass')">01 PASSWORD</button>
+            <button id="tabAccessKey" class="tab-btn active" onclick="setMode('key')">02 ACCESS KEY</button>
+        </div>
+
+        <!-- Input Box -->
+        <input type="text" id="credentialInput" class="input-dark-field" placeholder="AKAZA-XXXX-XXXX-XXXX" autocomplete="off" autofocus>
+
+        <!-- Activate Key Button -->
+        <button class="btn-activate" onclick="processUserLogin()">
+            ACTIVATE ACCESS KEY ↗
+        </button>
+
+        <!-- Join Telegram Button -->
+        <a href="https://t.me/Gara00077" target="_blank" class="btn-telegram">
+            ✈ JOIN TELEGRAM CHANNEL
+        </a>
+
+        <!-- Bottom Admin Console Trigger -->
+        <div class="admin-console-trigger" onclick="promptAdminConsole()">
+            ⚙ ADMIN CONSOLE ↗
         </div>
     </div>
 
     <!-- 2. USER PREDICTION DASHBOARD -->
-    <div id="dashboardView" style="display:none; flex-direction:column; gap:14px;">
+    <div id="dashboardView">
         <div class="dash-header">
             <div class="brand-meta">
                 <div class="avatar-box">AK</div>
@@ -466,10 +584,6 @@
 
         <div class="pill-badge-bar">
             ● LIVE ACTIVE • WINGO 1 MIN • ALGO 2738
-        </div>
-
-        <div class="promo-banner">
-            ✈ OFFICIAL TELEGRAM • @Gara00077
         </div>
 
         <div class="signal-core">
@@ -494,38 +608,28 @@
             </div>
         </div>
 
-        <div class="analytics-card">
-            <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:800; color:#065f46;">
-                <span id="sessionStatusText">Model support • Target wins: 10</span>
-                <span id="progressWinCount" style="color:var(--orange);">0/10 WINS</span>
-            </div>
-            <div class="bar-wrap">
-                <div id="sessionProgressBar" class="bar-fill"></div>
-            </div>
-        </div>
-
         <div class="bottom-nav">
             <div class="nav-item active">⌂ DASHBOARD</div>
-            <div class="nav-item" onclick="logoutApp()">🔒 LOGOUT</div>
+            <div class="nav-item" onclick="logoutSession()">🔒 LOGOUT</div>
         </div>
     </div>
 
     <!-- 3. ADMIN PANEL SCREEN -->
-    <div id="adminView" style="display:none; flex-direction:column; gap:14px;">
+    <div id="adminView">
         <div class="admin-header">
-            <h2>👑 AKAZA MASTER ADMIN</h2>
-            <button onclick="logoutApp()" style="background:#ef4444; color:#fff; border:none; padding:4px 10px; border-radius:8px; font-weight:800;">EXIT</button>
+            <h2>👑 AKAZA ADMIN CONSOLE</h2>
+            <button onclick="logoutSession()" style="background:#ef4444; color:#fff; border:none; padding:4px 10px; border-radius:8px; font-weight:800; cursor:pointer;">EXIT</button>
         </div>
 
         <div class="admin-section">
             <div class="admin-title">
                 <span>🎮 SESSION CONTROL</span>
-                <span id="adminSessionStatus" style="color:var(--orange);">READY</span>
+                <span id="adminSessionStatus" style="color:#10b981;">RUNNING</span>
             </div>
             <div style="display:flex; gap:8px;">
                 <input type="number" id="adminTargetWins" value="10" style="flex:1; padding:10px; border-radius:10px; border:1px solid #cbd5e1; font-weight:800;">
-                <button onclick="adminStartSession()" style="background:var(--primary); color:white; border:none; padding:10px 14px; border-radius:10px; font-weight:800;">START</button>
-                <button onclick="adminStopSession()" style="background:#ef4444; color:white; border:none; padding:10px 14px; border-radius:10px; font-weight:800;">STOP</button>
+                <button onclick="adminStartSession()" style="background:#10b981; color:white; border:none; padding:10px 14px; border-radius:10px; font-weight:800; cursor:pointer;">START</button>
+                <button onclick="adminStopSession()" style="background:#ef4444; color:white; border:none; padding:10px 14px; border-radius:10px; font-weight:800; cursor:pointer;">STOP</button>
             </div>
         </div>
 
@@ -537,68 +641,4 @@
                     <option value="24">24 Hours</option>
                     <option value="168">7 Days</option>
                 </select>
-                <button onclick="adminGenerateKey()" style="background:var(--orange); color:white; border:none; padding:10px 14px; border-radius:10px; font-weight:800;">CREATE KEY</button>
-            </div>
-            <div class="key-list-box" id="adminKeyList"></div>
-        </div>
-
-        <div class="admin-section">
-            <div class="admin-title">🎨 UI COLOR THEMES</div>
-            <div class="color-palette">
-                <div class="color-swatch" style="background:#10b981;" onclick="setThemeColor('#10b981', '#f0fdf4', '#bbf7d0')"></div>
-                <div class="color-swatch" style="background:#06b6d4;" onclick="setThemeColor('#06b6d4', '#ecfeff', '#a5f3fc')"></div>
-                <div class="color-swatch" style="background:#8b5cf6;" onclick="setThemeColor('#8b5cf6', '#f5f3ff', '#ddd6fe')"></div>
-                <div class="color-swatch" style="background:#f97316;" onclick="setThemeColor('#f97316', '#fff7ed', '#fed7aa')"></div>
-                <div class="color-swatch" style="background:#e11d48;" onclick="setThemeColor('#e11d48', '#fff1f2', '#fecdd3')"></div>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<script>
-    const FIXED_DIVIDEND = 2738;
-    const API_URL = "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
-
-    let appState = {
-        isSessionRunning: true,
-        targetWins: 10,
-        currentWins: 0,
-        targetIssue: 0,
-        predictedSize: "BIG",
-        predictedHotNums: [6, 7]
-    };
-
-    let userKeys = {};
-    try {
-        userKeys = JSON.parse(localStorage.getItem("akaza_keys")) || {};
-    } catch(e) {
-        userKeys = {};
-    }
-
-    // AUTO VALIDATOR ON INPUT
-    function autoCheckKey(val) {
-        const key = (val || "").replace(/\s+/g, '').toUpperCase();
-        const statusBox = document.getElementById("authStatus");
-
-        if (!key) {
-            statusBox.className = "auth-status-box status-idle";
-            statusBox.innerText = "Waiting for input...";
-            return;
-        }
-
-        // Master Admin: 777 or ADMIN
-        if (key === "777" || key === "ADMIN" || key === "ADMIN777") {
-            statusBox.className = "auth-status-box status-ok";
-            statusBox.innerText = "✓ ADMIN VERIFIED! OPENING...";
-            setTimeout(() => {
-                document.getElementById("loginView").style.display = "none";
-                document.getElementById("dashboardView").style.display = "none";
-                document.getElementById("adminView").style.display = "flex";
-                renderAdminKeys();
-            }, 400);
-            return;
-        }
-
-        // VIP User: AKAZA100 or VIP
-      
+                <button onclick="adminGenerateKey()" style="background:#f97316; color:white; border:non
